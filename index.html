@@ -225,9 +225,12 @@
   };
   window.resetAgendaToDefaults = resetAgendaToDefaults;
 
-  // Start agenda subscription immediately on page load (no login required to see agenda)
-  seedAgendaIfEmpty();
-  subscribeAgenda();
+  // Start agenda subscription after DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => { seedAgendaIfEmpty(); subscribeAgenda(); });
+  } else {
+    seedAgendaIfEmpty(); subscribeAgenda();
+  }
 
   // ── Online users ──
   function trackOnline(name) {
@@ -520,7 +523,7 @@
 <header>
   <div>
     <h1>🕊️ BDDI Jahresplanung 2026/27 · Yıllık Planlama</h1>
-    <p>Bundesverband Dialogarbeit Deutschland · Tagung · Haziran / Juni 2026 · v6</p>
+    <p>Bundesverband Dialogarbeit Deutschland · Tagung · Haziran / Juni 2026 · v7</p>
   </div>
   <div class="badge">📅 Schuljahr 2026/2027</div>
 </header>
