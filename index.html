@@ -197,13 +197,21 @@
     onValue(agendaRef, snap => renderAgenda(snap));
   }
 
+  async function resetAgendaToDefaults() {
+    if (!confirm('Agenda auf Standard zurücksetzen? Alle Änderungen gehen verloren!')) return;
+    await set(agendaRef, null);
+    AGENDA_DEFAULTS.forEach(slot => push(agendaRef, { ...slot, ts: Date.now() }));
+  }
+
   window._fbAgenda = {
     add: (slot) => push(agendaRef, { ...slot, ts: Date.now() }),
     del: (key)  => remove(ref(db, `agenda/${key}`)),
     upd: (key, data) => update(ref(db, `agenda/${key}`), data),
     seed: seedAgendaIfEmpty,
-    subscribe: subscribeAgenda
+    subscribe: subscribeAgenda,
+    reset: resetAgendaToDefaults
   };
+  window.resetAgendaToDefaults = resetAgendaToDefaults;
 
   // ── Online users ──
   function trackOnline(name) {
@@ -520,6 +528,7 @@
       <p class="subtitle">Moderationsablauf · Moderasyon Taslağı</p>
     </div>
     <button class="btn btn-primary" id="btn-add-slot" style="display:none" onclick="openModal('agenda-slot')">+ Neuer Slot</button>
+    <button class="btn" id="btn-reset-agenda" style="display:none;background:#e74c3c;color:white;margin-left:8px" onclick="resetAgendaToDefaults()">🔄 Agenda zurücksetzen</button>
   </div>
 
   <div id="agenda-sa" class="agenda-block">
@@ -709,7 +718,7 @@ function applySession() {
   if (currentUser.role === 'admin') {
     document.body.classList.add('is-admin');
     document.getElementById('admin-bar').classList.add('visible');
-    ['btn-add-ziel','btn-add-proj','btn-add-mass','th-ziel-act','th-mass-act','btn-add-slot'].forEach(id => {
+    ['btn-add-ziel','btn-add-proj','btn-add-mass','th-ziel-act','th-mass-act','btn-add-slot','btn-reset-agenda'].forEach(id => {
       const el = document.getElementById(id); if(el) el.style.display='';
     });
     document.querySelectorAll('.ziel-act,.mass-act').forEach(el => el.style.display='');
