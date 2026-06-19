@@ -173,11 +173,17 @@
     saContainer.innerHTML = '';
     soContainer.innerHTML = '';
     if (!snap.exists()) return;
-    const slots = [];
-    snap.forEach(child => slots.push({ key: child.key, ...child.val() }));
-    slots.sort((a, b) => _timeToMin(a.time) - _timeToMin(b.time));
     const isAdmin = document.body.classList.contains('is-admin');
-    slots.forEach(slot => {
+    const saSlots = [];
+    const soSlots = [];
+    snap.forEach(child => {
+      const data = child.val();
+      const obj = { key: child.key, day: data.day||'sa', time: data.time||'', title: data.title||'', desc: data.desc||'', tags: data.tags||'' };
+      if (obj.day === 'so') soSlots.push(obj); else saSlots.push(obj);
+    });
+    saSlots.sort((a,b) => _timeToMin(a.time) - _timeToMin(b.time));
+    soSlots.sort((a,b) => _timeToMin(a.time) - _timeToMin(b.time));
+    [...saSlots, ...soSlots].forEach(slot => {
       const tagHtml = slot.tags ? slot.tags.split(',').map(t => `<span class="method-tag">${t.trim()}</span>`).join('') : '';
       const div = document.createElement('div');
       div.className = 'agenda-slot';
@@ -187,7 +193,7 @@
         <div class="agenda-time">${slot.time}</div>
         <div class="agenda-content">
           <strong>${slot.title}</strong>
-          <p>${slot.desc || ''}</p>
+          <p>${slot.desc}</p>
           ${tagHtml}
         </div>
         <div class="slot-actions" style="display:${isAdmin?'flex':'none'};gap:4px;align-items:center;padding:0 10px;flex-shrink:0">
@@ -523,7 +529,7 @@
 <header>
   <div>
     <h1>🕊️ BDDI Jahresplanung 2026/27 · Yıllık Planlama</h1>
-    <p>Bundesverband Dialogarbeit Deutschland · Tagung · Haziran / Juni 2026 · v7</p>
+    <p>Bundesverband Dialogarbeit Deutschland · Tagung · Haziran / Juni 2026 · v8</p>
   </div>
   <div class="badge">📅 Schuljahr 2026/2027</div>
 </header>
