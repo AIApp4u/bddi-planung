@@ -148,7 +148,10 @@
 
   const agendaRef = ref(db, 'agenda');
 
+  let _agendaSeeded = false;
   async function seedAgendaIfEmpty() {
+    if (_agendaSeeded) return;
+    _agendaSeeded = true;
     onValue(agendaRef, snap => {
       if (!snap.exists()) {
         AGENDA_DEFAULTS.forEach(slot => push(agendaRef, { ...slot, ts: Date.now() }));
@@ -199,8 +202,14 @@
 
   async function resetAgendaToDefaults() {
     if (!confirm('Agenda auf Standard zurücksetzen? Alle Änderungen gehen verloren!')) return;
-    await set(agendaRef, null);
-    AGENDA_DEFAULTS.forEach(slot => push(agendaRef, { ...slot, ts: Date.now() }));
+    // Write all defaults in one atomic set() — no gap where seed() could interfere
+    const newData = {};
+    AGENDA_DEFAULTS.forEach(slot => {
+      const key = push(agendaRef).key;
+      newData[key] = { ...slot, ts: Date.now() };
+    });
+    await set(agendaRef, newData);
+    showToast('✅ Agenda zurückgesetzt!');
   }
 
   window._fbAgenda = {
@@ -702,16 +711,25 @@ function loginTN() {
   const bl   = document.getElementById('tn-bl').value.trim();
   if (!name) { document.getElementById('tn-name').style.borderColor='var(--red)'; return; }
   currentUser = { name, role: 'teilnehmer', bl };
+  sessionStorage.setItem('bddi_session', JSON.stringify(currentUser));
   applySession();
 }
 function loginAdmin() {
   if (document.getElementById('adm-pw').value === ADMIN_PW) {
     currentUser = { name: 'Admin', role: 'admin', bl: '' };
+    sessionStorage.setItem('bddi_session', JSON.stringify(currentUser));
     applySession();
   } else {
     document.getElementById('adm-err').style.display = 'block';
   }
 }
+// Auto-restore session on page load
+(function() {
+  try {
+    const saved = sessionStorage.getItem('bddi_session');
+    if (saved) { currentUser = JSON.parse(saved); applySession(); }
+  } catch(e) {}
+})();
 function applySession() {
   document.getElementById('login-overlay').style.display = 'none';
   document.getElementById('config-banner').style.display = 'none';
@@ -905,8 +923,10 @@ function saveModal() {
     const desc  = document.getElementById('f-adesc').value||'';
     const tags  = document.getElementById('f-atags').value||'';
     const day   = document.getElementById('f-aday').value;
-    window._fbAgenda.add({ time, title, desc, tags, day });
-    closeModal(); showToast('✅ Slot hinzugefügt!'); return;
+    window._fbAgenda.add({ time, title, desc, tags, day })
+      .then(() => showToast('✅ Slot hinzugefügt!'))
+      .catch(e => { showToast('❌ Fehler: ' + e.message); console.error(e); });
+    closeModal(); return;
   }
   if (modalType === '_slot-edit') {
     const fbkey = window._slotEditFbKey;
