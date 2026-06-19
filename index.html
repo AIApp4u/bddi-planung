@@ -888,6 +888,28 @@ function openModal(type) {
   document.getElementById('modal-overlay').classList.add('open');
 }
 function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+function timeToMinutes(t) {
+  if (!t) return 9999;
+  const m = t.match(/(\d{1,2})[:\-–]?(\d{2})/);
+  if (!m) return 9999;
+  return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+}
+function insertSlotSorted(container, newSlot, time) {
+  const newMin = timeToMinutes(time);
+  const existing = Array.from(container.querySelectorAll('.agenda-slot'));
+  let inserted = false;
+  for (const slot of existing) {
+    const slotTime = slot.querySelector('.agenda-time') ? slot.querySelector('.agenda-time').textContent.trim() : '';
+    if (timeToMinutes(slotTime) > newMin) {
+      container.insertBefore(newSlot, slot);
+      inserted = true;
+      break;
+    }
+  }
+  if (!inserted) container.appendChild(newSlot);
+}
+
 function saveModal() {
   if (modalType === 'agenda-slot') {
     const time  = (document.getElementById('f-atime').value||'').trim();
@@ -897,7 +919,8 @@ function saveModal() {
     const tags  = document.getElementById('f-atags').value||'';
     const day   = document.getElementById('f-aday').value;
     const target = day === 'so' ? document.getElementById('agenda-so') : document.getElementById('agenda-sa');
-    target.appendChild(buildSlot(time, title, desc, tags, day));
+    const newSlot = buildSlot(time, title, desc, tags, day);
+    insertSlotSorted(target, newSlot, time);
     closeModal(); showToast('✅ Slot hinzugefügt!'); return;
   }
   if (modalType === '_slot-edit') {
@@ -920,7 +943,8 @@ function saveModal() {
     const newDay = day;
     slot.dataset.day = newDay;
     const target = newDay === 'so' ? document.getElementById('agenda-so') : document.getElementById('agenda-sa');
-    target.appendChild(slot);
+    slot.remove();
+    insertSlotSorted(target, slot, time);
     closeModal(); showToast('✅ Gespeichert!'); return;
   }
   if (modalType === 'ziel') {
