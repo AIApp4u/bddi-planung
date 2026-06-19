@@ -238,6 +238,211 @@
     seedAgendaIfEmpty(); subscribeAgenda();
   }
 
+  // ── Jahresziele Firebase ──
+  const ZIELE_DEFAULTS = [
+    { ziel:'Dialogarbeit in allen 16 BL systematisieren', warum:'Uneinheitliche Qualität', verantwortlich:'Eyalet Diyalogcuları', massnahme:'Monatliches Reporting', deadline:'Sept. 2026', kpi:'16/16 Berichte' },
+    { ziel:'Genç Diyalogcular stärken', warum:'Nachwuchs als Multiplikatoren', verantwortlich:'Genç Diyalogcular', massnahme:'Jugend-Akademie starten', deadline:'Nov. 2026', kpi:'30 TN, 3 Workshops' },
+    { ziel:'Ramadan-Arbeit professionalisieren', warum:'Größtes Event, bisher unstrukturiert', verantwortlich:'BDDI + Medien AG', massnahme:'Handbuch finalisieren', deadline:'Jan. 2027', kpi:'Handbuch veröffentlicht' },
+    { ziel:'VIP-Kontakte systematisch aufbauen', warum:'Politische Reichweite', verantwortlich:'Eyalet/İl Teams', massnahme:'VIP-Liste + Besuchsplan', deadline:'Okt. 2026', kpi:'100 Kontakte' },
+    { ziel:'Medienarbeit vereinheitlichen', warum:'Unkoordinierte Posts', verantwortlich:'Medien AG', massnahme:'Vorlagen-Paket erstellen', deadline:'Sept. 2026', kpi:'Materialpaket fertig' }
+  ];
+
+  const zieleRef = ref(db, 'jahresziele');
+
+  async function seedZieleIfEmpty() {
+    onValue(zieleRef, snap => {
+      if (!snap.exists()) {
+        ZIELE_DEFAULTS.forEach(z => push(zieleRef, { ...z, ts: Date.now() }));
+      }
+    }, { onlyOnce: true });
+  }
+
+  function renderZiele(snap) {
+    const tbody = document.getElementById('ziele-tbody');
+    if (!tbody) return;
+    const isAdmin = document.body.classList.contains('is-admin');
+    tbody.innerHTML = '';
+    if (!snap.exists()) return;
+    let n = 0;
+    snap.forEach(child => {
+      n++;
+      const key = child.key;
+      const d = child.val();
+      const tr = document.createElement('tr');
+      tr.dataset.fbkey = key;
+      tr.innerHTML = `
+        <td><strong>Z${n}</strong></td>
+        <td><strong>${d.ziel||''}</strong></td>
+        <td>${d.warum||''}</td>
+        <td><span class="tag tag-blue">${d.verantwortlich||''}</span></td>
+        <td>${d.massnahme||''}</td>
+        <td>${d.deadline||''}</td>
+        <td>${d.kpi||''}</td>
+        <td><span class="tag tag-yellow">Offen</span></td>
+        <td class="ziel-act" style="display:${isAdmin?'':'none'}">
+          <button class="card-btn del" onclick="deleteZiel(this)">🗑️</button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function subscribeZiele() {
+    onValue(zieleRef, snap => renderZiele(snap));
+  }
+
+  window._fbZiele = {
+    add: (data) => push(zieleRef, { ...data, ts: Date.now() }),
+    del: (key)  => remove(ref(db, `jahresziele/${key}`)),
+    seed: seedZieleIfEmpty,
+    subscribe: subscribeZiele
+  };
+
+  // ── Projekte Firebase ──
+  const PROJEKTE_DEFAULTS = [
+    { titel:'🕌 Ramadan-Handbuch', deadline:'Jan. 2027', borderColor:'var(--accent)', ziel:'Einheitliches Handbuch für alle Bundesländer', verantwortliche:'BDDI + Medien AG', schritte:'1. Inhaltsstruktur · 2. Texte · 3. Design', kpi:'Gedruckt + digital verfügbar' },
+    { titel:'👩‍🎓 Genç Diyalogcular', deadline:'Nov. 2026', borderColor:'var(--purple)', ziel:'Jugendstruktur aufbauen & erste Akademie', verantwortliche:'Genç Diyalogcular + Akademie Team', schritte:'1. Koordinator · 2. Curriculum · 3. Ausschreibung', kpi:'30 TN, 3 Workshops/Jahr' },
+    { titel:'📘 Dialogheft 2026/27', deadline:'Sept. 2026', borderColor:'var(--green)', ziel:'', verantwortliche:'Medien AG + BDDI Geschäftsstelle', schritte:'', kpi:'500 Exemplare verteilt' },
+    { titel:'🏛️ DDP 2027', deadline:'März 2027', borderColor:'var(--red)', ziel:'', verantwortliche:'BDDI Vorstand + Projektteam', schritte:'', kpi:'Konzept + 3 bestätigte Partner' },
+    { titel:'🤖 AI-Agents & DialogHub', deadline:'Feb. 2027', borderColor:'#17a589', ziel:'', verantwortliche:'Akademie + IT', schritte:'', kpi:'3 BL aktiv, 50 Nutzer' },
+    { titel:'🌍 IFLC 2027', deadline:'Lfd.', borderColor:'var(--yellow)', ziel:'', verantwortliche:'BDDI + İl Teams', schritte:'', kpi:'Min. 20 TN aus DE' },
+    { titel:'🤝 Summit / Zirve 2027', deadline:'2027', borderColor:'var(--accent)', ziel:'', verantwortliche:'BDDI Vorstand + Orga-Team', schritte:'', kpi:'200+ Teilnehmende' },
+    { titel:'🚗 VIP Ulaşım', deadline:'Okt. 2026', borderColor:'var(--orange)', ziel:'', verantwortliche:'Eyalet + İl Teams', schritte:'', kpi:'100 priorisierte Kontakte' }
+  ];
+
+  const projekteRef = ref(db, 'projekte');
+
+  async function seedProjekteIfEmpty() {
+    onValue(projekteRef, snap => {
+      if (!snap.exists()) {
+        PROJEKTE_DEFAULTS.forEach(p => push(projekteRef, { ...p, ts: Date.now() }));
+      }
+    }, { onlyOnce: true });
+  }
+
+  function renderProjekte(snap) {
+    const grid = document.getElementById('projekt-grid');
+    if (!grid) return;
+    const isAdmin = document.body.classList.contains('is-admin');
+    grid.innerHTML = '';
+    if (!snap.exists()) return;
+    snap.forEach(child => {
+      const key = child.key;
+      const d = child.val();
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.borderColor = d.borderColor || 'var(--accent)';
+      card.dataset.fbkey = key;
+      card.innerHTML = `
+        <div class="card-admin-btns" style="display:${isAdmin?'flex':'none'}">
+          <button class="card-btn del" onclick="deleteCard(this)">🗑️</button>
+        </div>
+        <h4>${d.titel||''} ${d.deadline ? `<span class="tag tag-blue">${d.deadline}</span>` : ''}</h4>
+        ${d.ziel ? `<div class="card-field"><label>Ziel</label><p>${d.ziel}</p></div>` : ''}
+        <div class="card-field"><label>Verantwortliche</label><p>${d.verantwortliche||''}</p></div>
+        ${d.schritte ? `<div class="card-field"><label>Nächste 3 Schritte</label><p>${d.schritte}</p></div>` : ''}
+        <div class="card-field"><label>KPI</label><p>${d.kpi||''}</p></div>`;
+      grid.appendChild(card);
+    });
+  }
+
+  function subscribeProjekte() {
+    onValue(projekteRef, snap => renderProjekte(snap));
+  }
+
+  window._fbProjekte = {
+    add: (data) => push(projekteRef, { ...data, ts: Date.now() }),
+    del: (key)  => remove(ref(db, `projekte/${key}`)),
+    seed: seedProjekteIfEmpty,
+    subscribe: subscribeProjekte
+  };
+
+  // ── Maßnahmen Firebase ──
+  const MASSNAHMEN_DEFAULTS = [
+    { zref:'Z1', mtext:'Monatliches Eyalet-Reporting einführen', mverant:'Eyalet Koord.', mdeadline:'Sept. 2026', mkpi:'16/16 BL', status:'offen' },
+    { zref:'Z2', mtext:'Koordinator/in für Genç Diyalogcular wählen', mverant:'Genç Diyal.', mdeadline:'Aug. 2026', mkpi:'1 Koordinator', status:'offen' },
+    { zref:'Z3', mtext:'Ramadan-Handbuch Redaktionsplan', mverant:'Medien AG', mdeadline:'Sept. 2026', mkpi:'Plan fertig', status:'offen' },
+    { zref:'Z4', mtext:'VIP-Liste erstellen & kategorisieren', mverant:'Eyalet Teams', mdeadline:'Okt. 2026', mkpi:'100 Kontakte', status:'offen' },
+    { zref:'Z5', mtext:'Vorlagen-Paket Social Media + Presse', mverant:'Medien AG', mdeadline:'Sept. 2026', mkpi:'Paket an alle BL', status:'offen' },
+    { zref:'Z6', mtext:'Bedarfsanalyse DialogHub/AI', mverant:'Akademie + IT', mdeadline:'Dez. 2026', mkpi:'Entscheidung dok.', status:'offen' },
+    { zref:'Z7', mtext:'DDP 2027 Konzeptpapier', mverant:'BDDI Vorstand', mdeadline:'Nov. 2026', mkpi:'Konzept beschlossen', status:'offen' }
+  ];
+
+  const massnahmenRef = ref(db, 'massnahmen');
+
+  async function seedMassnahmenIfEmpty() {
+    onValue(massnahmenRef, snap => {
+      if (!snap.exists()) {
+        MASSNAHMEN_DEFAULTS.forEach(m => push(massnahmenRef, { ...m, ts: Date.now() }));
+      }
+    }, { onlyOnce: true });
+  }
+
+  function renderMassnahmen(snap) {
+    const tbody = document.getElementById('mass-tbody');
+    if (!tbody) return;
+    const isAdmin = document.body.classList.contains('is-admin');
+    tbody.innerHTML = '';
+    if (!snap.exists()) return;
+    let n = 0;
+    snap.forEach(child => {
+      n++;
+      const key = child.key;
+      const d = child.val();
+      const status = d.status || 'offen';
+      const tagClass = status === 'erledigt' ? 'tag-green' : status === 'laufend' ? 'tag-blue' : 'tag-yellow';
+      const tagLabel = status === 'erledigt' ? 'Erledigt' : status === 'laufend' ? 'In Arbeit' : 'Offen';
+      const tr = document.createElement('tr');
+      tr.dataset.status = status;
+      tr.dataset.fbkey = key;
+      tr.innerHTML = `
+        <td>M${String(n).padStart(2,'0')}</td>
+        <td>${d.zref||''}</td>
+        <td>${d.mtext||''}</td>
+        <td><span class="tag tag-blue">${d.mverant||''}</span></td>
+        <td>${d.mdeadline||''}</td>
+        <td>${d.mkpi||''}</td>
+        <td>
+          ${isAdmin
+            ? `<select class="status-select" onchange="changeStatusM(this,'${key}')" style="font-family:Poppins,sans-serif;font-size:12px;border:1px solid var(--border);border-radius:6px;padding:3px 6px">
+                <option value="offen" ${status==='offen'?'selected':''}>Offen</option>
+                <option value="laufend" ${status==='laufend'?'selected':''}>In Arbeit</option>
+                <option value="erledigt" ${status==='erledigt'?'selected':''}>Erledigt</option>
+              </select>`
+            : `<span class="tag ${tagClass}">${tagLabel}</span>`
+          }
+        </td>
+        <td class="mass-act" style="display:${isAdmin?'':'none'}">
+          <button class="card-btn del" onclick="deleteMassnahme(this)">🗑️</button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function subscribeMassnahmen() {
+    onValue(massnahmenRef, snap => renderMassnahmen(snap));
+  }
+
+  window._fbMassnahmen = {
+    add: (data)       => push(massnahmenRef, { ...data, ts: Date.now() }),
+    del: (key)        => remove(ref(db, `massnahmen/${key}`)),
+    upd: (key, data)  => update(ref(db, `massnahmen/${key}`), data),
+    seed: seedMassnahmenIfEmpty,
+    subscribe: subscribeMassnahmen
+  };
+
+  // ── Subscribe all three after DOM ready ──
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      seedZieleIfEmpty(); subscribeZiele();
+      seedProjekteIfEmpty(); subscribeProjekte();
+      seedMassnahmenIfEmpty(); subscribeMassnahmen();
+    });
+  } else {
+    seedZieleIfEmpty(); subscribeZiele();
+    seedProjekteIfEmpty(); subscribeProjekte();
+    seedMassnahmenIfEmpty(); subscribeMassnahmen();
+  }
+
   // ── Online users ──
   function trackOnline(name) {
     const uid  = Math.random().toString(36).slice(2);
@@ -529,7 +734,7 @@
 <header>
   <div>
     <h1>🕊️ BDDI Jahresplanung 2026/27 · Yıllık Planlama</h1>
-    <p>Bundesverband Dialogarbeit Deutschland · Tagung · Haziran / Juni 2026 · v9</p>
+    <p>Bundesverband Dialogarbeit Deutschland · Tagung · Haziran / Juni 2026 · v10</p>
   </div>
   <div class="badge">📅 Schuljahr 2026/2027</div>
 </header>
@@ -643,15 +848,7 @@
     <button class="btn btn-primary" id="btn-add-ziel" style="display:none" onclick="openModal('ziel')">+ Neues Ziel</button>
   </div>
   <div class="table-wrap"><table><thead><tr><th>#</th><th>Ziel / Hedef</th><th>Warum?</th><th>Verantwortlich</th><th>Maßnahme</th><th>Deadline</th><th>KPI</th><th>Status</th><th id="th-ziel-act" style="display:none">⚙️</th></tr></thead>
-  <tbody id="ziele-tbody">
-    <tr><td><strong>Z1</strong></td><td><strong>Dialogarbeit in allen 16 BL systematisieren</strong></td><td>Uneinheitliche Qualität</td><td><span class="tag tag-blue">Eyalet Diyalogcuları</span></td><td>Monatliches Reporting</td><td>Sept. 2026</td><td>16/16 Berichte</td><td><span class="tag tag-yellow">Offen</span></td><td class="ziel-act" style="display:none"><button class="card-btn del" onclick="this.closest('tr').remove()">🗑️</button></td></tr>
-    <tr><td><strong>Z2</strong></td><td><strong>Genç Diyalogcular stärken</strong></td><td>Nachwuchs als Multiplikatoren</td><td><span class="tag tag-purple">Genç Diyalogcular</span></td><td>Jugend-Akademie starten</td><td>Nov. 2026</td><td>30 TN, 3 Workshops</td><td><span class="tag tag-yellow">Offen</span></td><td class="ziel-act" style="display:none"><button class="card-btn del" onclick="this.closest('tr').remove()">🗑️</button></td></tr>
-    <tr><td><strong>Z3</strong></td><td><strong>Ramadan-Arbeit professionalisieren</strong></td><td>Größtes Event, bisher unstrukturiert</td><td><span class="tag tag-blue">BDDI + Medien AG</span></td><td>Handbuch finalisieren</td><td>Jan. 2027</td><td>Handbuch veröffentlicht</td><td><span class="tag tag-yellow">Offen</span></td><td class="ziel-act" style="display:none"><button class="card-btn del" onclick="this.closest('tr').remove()">🗑️</button></td></tr>
-    <tr><td><strong>Z4</strong></td><td><strong>VIP-Kontakte systematisch aufbauen</strong></td><td>Politische Reichweite</td><td><span class="tag tag-blue">Eyalet/İl Teams</span></td><td>VIP-Liste + Besuchsplan</td><td>Okt. 2026</td><td>100 Kontakte</td><td><span class="tag tag-yellow">Offen</span></td><td class="ziel-act" style="display:none"><button class="card-btn del" onclick="this.closest('tr').remove()">🗑️</button></td></tr>
-    <tr><td><strong>Z5</strong></td><td><strong>Medienarbeit vereinheitlichen</strong></td><td>Unkoordinierte Posts</td><td><span class="tag tag-orange">Medien AG</span></td><td>Vorlagen-Paket erstellen</td><td>Sept. 2026</td><td>Materialpaket fertig</td><td><span class="tag tag-yellow">Offen</span></td><td class="ziel-act" style="display:none"><button class="card-btn del" onclick="this.closest('tr').remove()">🗑️</button></td></tr>
-    <tr><td><strong>Z6</strong></td><td><strong>DialogHub & AI-Agents einführen</strong></td><td>Effizienzsteigerung</td><td><span class="tag tag-green">Akademie + IT</span></td><td>Pilotprojekt 3 BL</td><td>Feb. 2027</td><td>3 BL, 50 Nutzer</td><td><span class="tag tag-yellow">Offen</span></td><td class="ziel-act" style="display:none"><button class="card-btn del" onclick="this.closest('tr').remove()">🗑️</button></td></tr>
-    <tr><td><strong>Z7</strong></td><td><strong>DDP 2027 vorbereiten</strong></td><td>Nationales Leuchtturmprojekt</td><td><span class="tag tag-blue">BDDI Vorstand</span></td><td>Konzept + Fundraising</td><td>März 2027</td><td>Konzept + 3 Partner</td><td><span class="tag tag-yellow">Offen</span></td><td class="ziel-act" style="display:none"><button class="card-btn del" onclick="this.closest('tr').remove()">🗑️</button></td></tr>
-  </tbody></table></div>
+  <tbody id="ziele-tbody"></tbody></table></div>
 </div>
 
 <!-- PROJEKTE -->
@@ -660,16 +857,7 @@
     <div><h2>Projektkarten / Proje Kartları</h2></div>
     <button class="btn btn-primary" id="btn-add-proj" style="display:none" onclick="openModal('projekt')">+ Neue Projektkarte</button>
   </div>
-  <div class="card-grid" id="projekt-grid">
-    <div class="card" style="border-color:var(--accent)"><div class="card-admin-btns"><button class="card-btn del" onclick="deleteCard(this)">🗑️</button></div><h4>🕌 Ramadan-Handbuch <span class="tag tag-blue">Jan. 2027</span></h4><div class="card-field"><label>Ziel</label><p>Einheitliches Handbuch für alle Bundesländer</p></div><div class="card-field"><label>Verantwortliche</label><p>BDDI + Medien AG</p></div><div class="card-field"><label>Nächste 3 Schritte</label><p>1. Inhaltsstruktur · 2. Texte · 3. Design</p></div><div class="card-field"><label>KPI</label><p>Gedruckt + digital verfügbar</p></div></div>
-    <div class="card" style="border-color:var(--purple)"><div class="card-admin-btns"><button class="card-btn del" onclick="deleteCard(this)">🗑️</button></div><h4>👩‍🎓 Genç Diyalogcular <span class="tag tag-purple">Nov. 2026</span></h4><div class="card-field"><label>Ziel</label><p>Jugendstruktur aufbauen & erste Akademie</p></div><div class="card-field"><label>Verantwortliche</label><p>Genç Diyalogcular + Akademie Team</p></div><div class="card-field"><label>Nächste 3 Schritte</label><p>1. Koordinator · 2. Curriculum · 3. Ausschreibung</p></div><div class="card-field"><label>KPI</label><p>30 TN, 3 Workshops/Jahr</p></div></div>
-    <div class="card" style="border-color:var(--green)"><div class="card-admin-btns"><button class="card-btn del" onclick="deleteCard(this)">🗑️</button></div><h4>📘 Dialogheft 2026/27 <span class="tag tag-green">Sept. 2026</span></h4><div class="card-field"><label>Verantwortliche</label><p>Medien AG + BDDI Geschäftsstelle</p></div><div class="card-field"><label>KPI</label><p>500 Exemplare verteilt</p></div></div>
-    <div class="card" style="border-color:var(--red)"><div class="card-admin-btns"><button class="card-btn del" onclick="deleteCard(this)">🗑️</button></div><h4>🏛️ DDP 2027 <span class="tag tag-red">März 2027</span></h4><div class="card-field"><label>Verantwortliche</label><p>BDDI Vorstand + Projektteam</p></div><div class="card-field"><label>KPI</label><p>Konzept + 3 bestätigte Partner</p></div></div>
-    <div class="card" style="border-color:#17a589"><div class="card-admin-btns"><button class="card-btn del" onclick="deleteCard(this)">🗑️</button></div><h4>🤖 AI-Agents & DialogHub <span class="tag tag-green">Feb. 2027</span></h4><div class="card-field"><label>Verantwortliche</label><p>Akademie + IT</p></div><div class="card-field"><label>KPI</label><p>3 BL aktiv, 50 Nutzer</p></div></div>
-    <div class="card" style="border-color:var(--yellow)"><div class="card-admin-btns"><button class="card-btn del" onclick="deleteCard(this)">🗑️</button></div><h4>🌍 IFLC 2027 <span class="tag tag-yellow">Lfd.</span></h4><div class="card-field"><label>Verantwortliche</label><p>BDDI + İl Teams</p></div><div class="card-field"><label>KPI</label><p>Min. 20 TN aus DE</p></div></div>
-    <div class="card" style="border-color:var(--accent)"><div class="card-admin-btns"><button class="card-btn del" onclick="deleteCard(this)">🗑️</button></div><h4>🤝 Summit / Zirve 2027 <span class="tag tag-blue">2027</span></h4><div class="card-field"><label>Verantwortliche</label><p>BDDI Vorstand + Orga-Team</p></div><div class="card-field"><label>KPI</label><p>200+ Teilnehmende</p></div></div>
-    <div class="card" style="border-color:var(--orange)"><div class="card-admin-btns"><button class="card-btn del" onclick="deleteCard(this)">🗑️</button></div><h4>🚗 VIP Ulaşım <span class="tag tag-orange">Okt. 2026</span></h4><div class="card-field"><label>Verantwortliche</label><p>Eyalet + İl Teams</p></div><div class="card-field"><label>KPI</label><p>100 priorisierte Kontakte</p></div></div>
-  </div>
+  <div class="card-grid" id="projekt-grid"></div>
 </div>
 
 <!-- MAßNAHMEN -->
@@ -685,15 +873,7 @@
     </div>
   </div>
   <div class="table-wrap"><table><thead><tr><th>#</th><th>Ziel</th><th>Maßnahme</th><th>Verantwortlich</th><th>Deadline</th><th>KPI</th><th>Status</th><th id="th-mass-act" style="display:none">⚙️</th></tr></thead>
-  <tbody id="mass-tbody">
-    <tr data-status="offen"><td>M01</td><td>Z1</td><td>Monatliches Eyalet-Reporting einführen</td><td><span class="tag tag-blue">Eyalet Koord.</span></td><td>Sept. 2026</td><td>16/16 BL</td><td><span class="tag tag-yellow">Offen</span></td><td class="mass-act" style="display:none"><button class="card-btn del" onclick="this.closest('tr').remove()">🗑️</button></td></tr>
-    <tr data-status="offen"><td>M02</td><td>Z2</td><td>Koordinator/in für Genç Diyalogcular wählen</td><td><span class="tag tag-purple">Genç Diyal.</span></td><td>Aug. 2026</td><td>1 Koordinator</td><td><span class="tag tag-yellow">Offen</span></td><td class="mass-act" style="display:none"><button class="card-btn del" onclick="this.closest('tr').remove()">🗑️</button></td></tr>
-    <tr data-status="offen"><td>M03</td><td>Z3</td><td>Ramadan-Handbuch Redaktionsplan</td><td><span class="tag tag-blue">Medien AG</span></td><td>Sept. 2026</td><td>Plan fertig</td><td><span class="tag tag-yellow">Offen</span></td><td class="mass-act" style="display:none"><button class="card-btn del" onclick="this.closest('tr').remove()">🗑️</button></td></tr>
-    <tr data-status="offen"><td>M04</td><td>Z4</td><td>VIP-Liste erstellen & kategorisieren</td><td><span class="tag tag-blue">Eyalet Teams</span></td><td>Okt. 2026</td><td>100 Kontakte</td><td><span class="tag tag-yellow">Offen</span></td><td class="mass-act" style="display:none"><button class="card-btn del" onclick="this.closest('tr').remove()">🗑️</button></td></tr>
-    <tr data-status="offen"><td>M05</td><td>Z5</td><td>Vorlagen-Paket Social Media + Presse</td><td><span class="tag tag-orange">Medien AG</span></td><td>Sept. 2026</td><td>Paket an alle BL</td><td><span class="tag tag-yellow">Offen</span></td><td class="mass-act" style="display:none"><button class="card-btn del" onclick="this.closest('tr').remove()">🗑️</button></td></tr>
-    <tr data-status="offen"><td>M06</td><td>Z6</td><td>Bedarfsanalyse DialogHub/AI</td><td><span class="tag tag-green">Akademie + IT</span></td><td>Dez. 2026</td><td>Entscheidung dok.</td><td><span class="tag tag-yellow">Offen</span></td><td class="mass-act" style="display:none"><button class="card-btn del" onclick="this.closest('tr').remove()">🗑️</button></td></tr>
-    <tr data-status="offen"><td>M07</td><td>Z7</td><td>DDP 2027 Konzeptpapier</td><td><span class="tag tag-blue">BDDI Vorstand</span></td><td>Nov. 2026</td><td>Konzept beschlossen</td><td><span class="tag tag-yellow">Offen</span></td><td class="mass-act" style="display:none"><button class="card-btn del" onclick="this.closest('tr').remove()">🗑️</button></td></tr>
-  </tbody></table></div>
+  <tbody id="mass-tbody"></tbody></table></div>
 </div>
 
 </main>
@@ -766,6 +946,10 @@ function applySession() {
   window._fb.seed();
   window._fb.subscribeAll();
   window._fb.trackOnline(currentUser.name);
+  // Init Ziele / Projekte / Maßnahmen
+  if (window._fbZiele)      { window._fbZiele.seed();      window._fbZiele.subscribe(); }
+  if (window._fbProjekte)   { window._fbProjekte.seed();   window._fbProjekte.subscribe(); }
+  if (window._fbMassnahmen) { window._fbMassnahmen.seed(); window._fbMassnahmen.subscribe(); }
   // Mirror online to both bars
   const obs = new MutationObserver(() => {
     const t = document.getElementById('online-users').textContent;
@@ -860,7 +1044,34 @@ function filterM(status) {
   });
 }
 function deleteCard(btn) {
-  if (confirm('Karte löschen?')) btn.closest('.card').remove();
+  const card = btn.closest('.card');
+  const fbkey = card.dataset.fbkey;
+  if (confirm('Karte löschen?')) {
+    if (fbkey && window._fbProjekte) window._fbProjekte.del(fbkey);
+    else card.remove();
+  }
+}
+function deleteZiel(btn) {
+  const tr = btn.closest('tr');
+  const fbkey = tr.dataset.fbkey;
+  if (confirm('Ziel löschen?')) {
+    if (fbkey && window._fbZiele) window._fbZiele.del(fbkey);
+    else tr.remove();
+  }
+}
+function deleteMassnahme(btn) {
+  const tr = btn.closest('tr');
+  const fbkey = tr.dataset.fbkey;
+  if (confirm('Maßnahme löschen?')) {
+    if (fbkey && window._fbMassnahmen) window._fbMassnahmen.del(fbkey);
+    else tr.remove();
+  }
+}
+function changeStatusM(select, fbkey) {
+  const newStatus = select.value;
+  const tr = select.closest('tr');
+  tr.dataset.status = newStatus;
+  if (fbkey && window._fbMassnahmen) window._fbMassnahmen.upd(fbkey, { status: newStatus });
 }
 
 // ── MODAL ──
@@ -958,49 +1169,42 @@ function saveModal() {
   if (modalType === 'ziel') {
     const ziel = (document.getElementById('f-ziel').value||'').trim();
     if (!ziel) return;
-    const tbody = document.getElementById('ziele-tbody');
-    const n = tbody.rows.length + 1;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td><strong>Z${n}</strong></td><td><strong>${ziel}</strong></td>
-      <td>${document.getElementById('f-warum').value}</td>
-      <td><span class="tag tag-blue">${document.getElementById('f-verant').value}</span></td>
-      <td>${document.getElementById('f-mass').value}</td>
-      <td>${document.getElementById('f-dead').value}</td>
-      <td>${document.getElementById('f-kpi').value}</td>
-      <td><span class="tag tag-yellow">Offen</span></td>
-      <td><button class="card-btn del" onclick="this.closest('tr').remove()">🗑️</button></td>`;
-    tbody.appendChild(tr);
+    window._fbZiele.add({
+      ziel,
+      warum:         document.getElementById('f-warum').value,
+      verantwortlich: document.getElementById('f-verant').value,
+      massnahme:     document.getElementById('f-mass').value,
+      deadline:      document.getElementById('f-dead').value,
+      kpi:           document.getElementById('f-kpi').value
+    }).then(() => showToast('✅ Ziel gespeichert!'))
+      .catch(e => showToast('❌ Fehler: ' + e.message));
   } else if (modalType === 'massnahme') {
     const mt = (document.getElementById('f-mtext').value||'').trim();
     if (!mt) return;
-    const tbody = document.getElementById('mass-tbody');
-    const n = String(tbody.rows.length+1).padStart(2,'0');
-    const tr = document.createElement('tr');
-    tr.dataset.status = 'offen';
-    tr.innerHTML = `<td>M${n}</td>
-      <td>${document.getElementById('f-zref').value}</td>
-      <td>${mt}</td>
-      <td><span class="tag tag-blue">${document.getElementById('f-mverant').value}</span></td>
-      <td>${document.getElementById('f-mdeadline').value}</td>
-      <td>${document.getElementById('f-mkpi').value}</td>
-      <td><span class="tag tag-yellow">Offen</span></td>
-      <td><button class="card-btn del" onclick="this.closest('tr').remove()">🗑️</button></td>`;
-    tbody.appendChild(tr);
+    window._fbMassnahmen.add({
+      zref:      document.getElementById('f-zref').value,
+      mtext:     mt,
+      mverant:   document.getElementById('f-mverant').value,
+      mdeadline: document.getElementById('f-mdeadline').value,
+      mkpi:      document.getElementById('f-mkpi').value,
+      status:    'offen'
+    }).then(() => showToast('✅ Maßnahme gespeichert!'))
+      .catch(e => showToast('❌ Fehler: ' + e.message));
   } else if (modalType === 'projekt') {
-    const title = (document.getElementById('f-ptit').value||'').trim();
-    if (!title) return;
-    const card = document.createElement('div');
-    card.className = 'card'; card.style.borderColor = 'var(--accent)';
-    card.innerHTML = `<div class="card-admin-btns" style="display:flex"><button class="card-btn del" onclick="deleteCard(this)">🗑️</button></div>
-      <h4>${title} ${document.getElementById('f-pdl').value ? `<span class="tag tag-blue">${document.getElementById('f-pdl').value}</span>` : ''}</h4>
-      <div class="card-field"><label>Ziel</label><p>${document.getElementById('f-pziel').value}</p></div>
-      <div class="card-field"><label>Verantwortliche</label><p>${document.getElementById('f-pver').value}</p></div>
-      <div class="card-field"><label>Nächste 3 Schritte</label><p>${document.getElementById('f-pschr').value}</p></div>
-      <div class="card-field"><label>KPI</label><p>${document.getElementById('f-pkpi').value}</p></div>`;
-    document.getElementById('projekt-grid').appendChild(card);
+    const titel = (document.getElementById('f-ptit').value||'').trim();
+    if (!titel) return;
+    window._fbProjekte.add({
+      titel,
+      deadline:      document.getElementById('f-pdl').value,
+      borderColor:   'var(--accent)',
+      ziel:          document.getElementById('f-pziel').value,
+      verantwortliche: document.getElementById('f-pver').value,
+      schritte:      document.getElementById('f-pschr').value,
+      kpi:           document.getElementById('f-pkpi').value
+    }).then(() => showToast('✅ Projekt gespeichert!'))
+      .catch(e => showToast('❌ Fehler: ' + e.message));
   }
   closeModal();
-  showToast('✅ Gespeichert!');
 }
 
 // ── TOAST ──
