@@ -159,18 +159,24 @@
     }, { onlyOnce: true });
   }
 
+  function _timeToMin(t) {
+    if (!t) return 9999;
+    const m = t.match(/(\d{1,2})[:\-–]?(\d{2})/);
+    if (!m) return 9999;
+    return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  }
+
   function renderAgenda(snap) {
     const saContainer = document.getElementById('agenda-sa-slots');
     const soContainer = document.getElementById('agenda-so-slots');
     if (!saContainer || !soContainer) return;
     saContainer.innerHTML = '';
     soContainer.innerHTML = '';
-    const isAdmin = document.body.classList.contains('is-admin');
     if (!snap.exists()) return;
     const slots = [];
     snap.forEach(child => slots.push({ key: child.key, ...child.val() }));
-    // sort by start time
-    slots.sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
+    slots.sort((a, b) => _timeToMin(a.time) - _timeToMin(b.time));
+    const isAdmin = document.body.classList.contains('is-admin');
     slots.forEach(slot => {
       const tagHtml = slot.tags ? slot.tags.split(',').map(t => `<span class="method-tag">${t.trim()}</span>`).join('') : '';
       const div = document.createElement('div');
@@ -184,16 +190,13 @@
           <p>${slot.desc || ''}</p>
           ${tagHtml}
         </div>
-        <div class="slot-actions" style="display:none;gap:4px;align-items:center;padding:0 10px;flex-shrink:0">
+        <div class="slot-actions" style="display:${isAdmin?'flex':'none'};gap:4px;align-items:center;padding:0 10px;flex-shrink:0">
           <button class="card-btn" onclick="editSlot(this)">✏️</button>
           <button class="card-btn del" onclick="deleteSlot(this)">🗑️</button>
         </div>`;
       if (slot.day === 'so') soContainer.appendChild(div);
       else saContainer.appendChild(div);
     });
-    if (isAdmin) {
-      document.querySelectorAll('.slot-actions').forEach(el => el.style.display = 'flex');
-    }
   }
 
   function subscribeAgenda() {
@@ -221,6 +224,10 @@
     reset: resetAgendaToDefaults
   };
   window.resetAgendaToDefaults = resetAgendaToDefaults;
+
+  // Start agenda subscription immediately on page load (no login required to see agenda)
+  seedAgendaIfEmpty();
+  subscribeAgenda();
 
   // ── Online users ──
   function trackOnline(name) {
@@ -749,8 +756,6 @@ function applySession() {
   window._fb.seed();
   window._fb.subscribeAll();
   window._fb.trackOnline(currentUser.name);
-  window._fbAgenda.seed();
-  window._fbAgenda.subscribe();
   // Mirror online to both bars
   const obs = new MutationObserver(() => {
     const t = document.getElementById('online-users').textContent;
