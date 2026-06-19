@@ -135,6 +135,76 @@
     });
   }
 
+  // ── Agenda Firebase ──
+  const AGENDA_DEFAULTS = [
+    { day:'sa', time:'08:00–09:00', title:'Einstieg & Arbeitsweise / Giriş ve Çalışma Yöntemi', desc:'Tagungsziel erklären · Board vorstellen · Spielregeln', tags:'🎤 Plenum,💡 Mentimeter' },
+    { day:'sa', time:'10:00–13:30', title:'Dialog-Handbuch Bewertung / El Kitabı Değerlendirme', desc:'Keep · Improve · Add · Remove', tags:'📝 Keep/Improve/Add/Remove,👥 Gruppenarbeit' },
+    { day:'sa', time:'13:30–15:00', title:'Mittagspause / Öğle Arası', desc:'—', tags:'' },
+    { day:'sa', time:'15:00–17:30', title:'SWOT-Analyse 2026/27', desc:'Einzelarbeit → Gruppenarbeit → Clustering → Voting', tags:'🟢 Einzelarbeit 15\',👥 Gruppen 30\',🗂️ Cluster 30\',🗳️ Voting 15\'' },
+    { day:'sa', time:'19:30–21:00', title:'Themen konkretisieren / Konular Detaylandırma', desc:'BDDI TO · Ramadan HB · IFLC · DDP 2027 · Dialogheft · Genç Diyalogcu', tags:'📋 Projektkarten,⚡ je 10\' pro Thema' },
+    { day:'so', time:'08:00–09:00', title:'Verdichtung / Özetleme', desc:'Top 5 je SWOT-Feld · Offene Konfliktpunkte', tags:'📊 Moderatoren-Zusammenfassung' },
+    { day:'so', time:'10:00–13:00', title:'Jahresziele & Maßnahmenplan / Yıllık Hedefler & Eylem Planı', desc:'Max. 5–7 Ziele · Maßnahme + Verantwortliche + Deadline + KPI', tags:'🎯 Zielformulierung,✅ Verbindliche Beschlüsse' }
+  ];
+
+  const agendaRef = ref(db, 'agenda');
+
+  async function seedAgendaIfEmpty() {
+    onValue(agendaRef, snap => {
+      if (!snap.exists()) {
+        AGENDA_DEFAULTS.forEach(slot => push(agendaRef, { ...slot, ts: Date.now() }));
+      }
+    }, { onlyOnce: true });
+  }
+
+  function renderAgenda(snap) {
+    const saContainer = document.getElementById('agenda-sa-slots');
+    const soContainer = document.getElementById('agenda-so-slots');
+    if (!saContainer || !soContainer) return;
+    saContainer.innerHTML = '';
+    soContainer.innerHTML = '';
+    const isAdmin = document.body.classList.contains('is-admin');
+    if (!snap.exists()) return;
+    const slots = [];
+    snap.forEach(child => slots.push({ key: child.key, ...child.val() }));
+    // sort by start time
+    slots.sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
+    slots.forEach(slot => {
+      const tagHtml = slot.tags ? slot.tags.split(',').map(t => `<span class="method-tag">${t.trim()}</span>`).join('') : '';
+      const div = document.createElement('div');
+      div.className = 'agenda-slot';
+      div.dataset.day = slot.day;
+      div.dataset.fbkey = slot.key;
+      div.innerHTML = `
+        <div class="agenda-time">${slot.time}</div>
+        <div class="agenda-content">
+          <strong>${slot.title}</strong>
+          <p>${slot.desc || ''}</p>
+          ${tagHtml}
+        </div>
+        <div class="slot-actions" style="display:none;gap:4px;align-items:center;padding:0 10px;flex-shrink:0">
+          <button class="card-btn" onclick="editSlot(this)">✏️</button>
+          <button class="card-btn del" onclick="deleteSlot(this)">🗑️</button>
+        </div>`;
+      if (slot.day === 'so') soContainer.appendChild(div);
+      else saContainer.appendChild(div);
+    });
+    if (isAdmin) {
+      document.querySelectorAll('.slot-actions').forEach(el => el.style.display = 'flex');
+    }
+  }
+
+  function subscribeAgenda() {
+    onValue(agendaRef, snap => renderAgenda(snap));
+  }
+
+  window._fbAgenda = {
+    add: (slot) => push(agendaRef, { ...slot, ts: Date.now() }),
+    del: (key)  => remove(ref(db, `agenda/${key}`)),
+    upd: (key, data) => update(ref(db, `agenda/${key}`), data),
+    seed: seedAgendaIfEmpty,
+    subscribe: subscribeAgenda
+  };
+
   // ── Online users ──
   function trackOnline(name) {
     const uid  = Math.random().toString(36).slice(2);
@@ -456,93 +526,12 @@
     <div class="agenda-day" style="display:flex;justify-content:space-between;align-items:center">
       <span>🗓️ Samstag / Cumartesi</span>
     </div>
-    <div class="agenda-slot" data-day="sa">
-      <div class="agenda-time">08:00–09:00</div>
-      <div class="agenda-content">
-        <strong>Einstieg &amp; Arbeitsweise / Giriş ve Çalışma Yöntemi</strong>
-        <p>Tagungsziel erklären · Board vorstellen · Spielregeln</p>
-        <span class="method-tag">🎤 Plenum</span><span class="method-tag">💡 Mentimeter</span>
-      </div>
-      <div class="slot-actions" style="display:none;gap:4px;align-items:center;padding:0 10px;flex-shrink:0">
-        <button class="card-btn" onclick="editSlot(this)">✏️</button>
-        <button class="card-btn del" onclick="deleteSlot(this)">🗑️</button>
-      </div>
-    </div>
-    <div class="agenda-slot" data-day="sa">
-      <div class="agenda-time">10:00–13:30</div>
-      <div class="agenda-content">
-        <strong>Dialog-Handbuch Bewertung / El Kitabı Değerlendirme</strong>
-        <p>Keep · Improve · Add · Remove</p>
-        <span class="method-tag">📝 Keep/Improve/Add/Remove</span><span class="method-tag">👥 Gruppenarbeit</span>
-      </div>
-      <div class="slot-actions" style="display:none;gap:4px;align-items:center;padding:0 10px;flex-shrink:0">
-        <button class="card-btn" onclick="editSlot(this)">✏️</button>
-        <button class="card-btn del" onclick="deleteSlot(this)">🗑️</button>
-      </div>
-    </div>
-    <div class="agenda-slot" data-day="sa">
-      <div class="agenda-time">13:30–15:00</div>
-      <div class="agenda-content">
-        <strong>Mittagspause / Öğle Arası</strong>
-        <p>—</p>
-      </div>
-      <div class="slot-actions" style="display:none;gap:4px;align-items:center;padding:0 10px;flex-shrink:0">
-        <button class="card-btn" onclick="editSlot(this)">✏️</button>
-        <button class="card-btn del" onclick="deleteSlot(this)">🗑️</button>
-      </div>
-    </div>
-    <div class="agenda-slot" data-day="sa">
-      <div class="agenda-time">15:00–17:30</div>
-      <div class="agenda-content">
-        <strong>SWOT-Analyse 2026/27</strong>
-        <p>Einzelarbeit → Gruppenarbeit → Clustering → Voting</p>
-        <span class="method-tag">🟢 Einzelarbeit 15'</span><span class="method-tag">👥 Gruppen 30'</span><span class="method-tag">🗂️ Cluster 30'</span><span class="method-tag">🗳️ Voting 15'</span>
-      </div>
-      <div class="slot-actions" style="display:none;gap:4px;align-items:center;padding:0 10px;flex-shrink:0">
-        <button class="card-btn" onclick="editSlot(this)">✏️</button>
-        <button class="card-btn del" onclick="deleteSlot(this)">🗑️</button>
-      </div>
-    </div>
-    <div class="agenda-slot" data-day="sa">
-      <div class="agenda-time">19:30–21:00</div>
-      <div class="agenda-content">
-        <strong>Themen konkretisieren / Konular Detaylandırma</strong>
-        <p>BDDI TO · Ramadan HB · IFLC · DDP 2027 · Dialogheft · Genç Diyalogcu</p>
-        <span class="method-tag">📋 Projektkarten</span><span class="method-tag">⚡ je 10' pro Thema</span>
-      </div>
-      <div class="slot-actions" style="display:none;gap:4px;align-items:center;padding:0 10px;flex-shrink:0">
-        <button class="card-btn" onclick="editSlot(this)">✏️</button>
-        <button class="card-btn del" onclick="deleteSlot(this)">🗑️</button>
-      </div>
-    </div>
+    <div id="agenda-sa-slots"></div>
   </div>
 
   <div id="agenda-so" class="agenda-block">
     <div class="agenda-day">🗓️ Sonntag / Pazar</div>
-    <div class="agenda-slot" data-day="so">
-      <div class="agenda-time">08:00–09:00</div>
-      <div class="agenda-content">
-        <strong>Verdichtung / Özetleme</strong>
-        <p>Top 5 je SWOT-Feld · Offene Konfliktpunkte</p>
-        <span class="method-tag">📊 Moderatoren-Zusammenfassung</span>
-      </div>
-      <div class="slot-actions" style="display:none;gap:4px;align-items:center;padding:0 10px;flex-shrink:0">
-        <button class="card-btn" onclick="editSlot(this)">✏️</button>
-        <button class="card-btn del" onclick="deleteSlot(this)">🗑️</button>
-      </div>
-    </div>
-    <div class="agenda-slot" data-day="so">
-      <div class="agenda-time">10:00–13:00</div>
-      <div class="agenda-content">
-        <strong>Jahresziele &amp; Maßnahmenplan / Yıllık Hedefler &amp; Eylem Planı</strong>
-        <p>Max. 5–7 Ziele · Maßnahme + Verantwortliche + Deadline + KPI</p>
-        <span class="method-tag">🎯 Zielformulierung</span><span class="method-tag">✅ Verbindliche Beschlüsse</span>
-      </div>
-      <div class="slot-actions" style="display:none;gap:4px;align-items:center;padding:0 10px;flex-shrink:0">
-        <button class="card-btn" onclick="editSlot(this)">✏️</button>
-        <button class="card-btn del" onclick="deleteSlot(this)">🗑️</button>
-      </div>
-    </div>
+    <div id="agenda-so-slots"></div>
   </div>
 </div>
 
@@ -733,6 +722,8 @@ function applySession() {
   window._fb.seed();
   window._fb.subscribeAll();
   window._fb.trackOnline(currentUser.name);
+  window._fbAgenda.seed();
+  window._fbAgenda.subscribe();
   // Mirror online to both bars
   const obs = new MutationObserver(() => {
     const t = document.getElementById('online-users').textContent;
@@ -787,13 +778,14 @@ window.castVote = function(dot) { dot.classList.toggle('voted'); };
 // ── AGENDA SLOT EDIT / DELETE ──
 function editSlot(btn) {
   const slot = btn.closest('.agenda-slot');
-  const time    = slot.querySelector('.agenda-time').textContent.trim();
-  const title   = slot.querySelector('.agenda-content strong').textContent.trim();
-  const desc    = slot.querySelector('.agenda-content p').textContent.trim();
-  const tags    = [...slot.querySelectorAll('.method-tag')].map(t => t.textContent.trim()).join(', ');
-  const day     = slot.dataset.day || 'sa';
+  const time  = slot.querySelector('.agenda-time').textContent.trim();
+  const title = slot.querySelector('.agenda-content strong').textContent.trim();
+  const desc  = slot.querySelector('.agenda-content p').textContent.trim();
+  const tags  = [...slot.querySelectorAll('.method-tag')].map(t => t.textContent.trim()).join(', ');
+  const day   = slot.dataset.day || 'sa';
+  const fbkey = slot.dataset.fbkey;
   modalType = '_slot-edit';
-  window._slotEditTarget = slot;
+  window._slotEditFbKey = fbkey;
   document.getElementById('modal-title').textContent = 'Slot bearbeiten';
   document.getElementById('modal-body').innerHTML = `
     <div class="form-group"><label>Uhrzeit</label><input id="f-atime" value="${time}"></div>
@@ -810,26 +802,12 @@ function editSlot(btn) {
 }
 
 function deleteSlot(btn) {
-  if (confirm('Slot löschen?')) btn.closest('.agenda-slot').remove();
-}
-
-function buildSlot(time, title, desc, tags, day) {
-  const slot = document.createElement('div');
-  slot.className = 'agenda-slot';
-  slot.dataset.day = day;
-  const tagHtml = tags ? tags.split(',').map(t => `<span class="method-tag">${t.trim()}</span>`).join('') : '';
-  slot.innerHTML = `
-    <div class="agenda-time">${time}</div>
-    <div class="agenda-content">
-      <strong>${title}</strong>
-      <p>${desc}</p>
-      ${tagHtml}
-    </div>
-    <div class="slot-actions" style="display:flex;gap:4px;align-items:center;padding:0 10px;flex-shrink:0">
-      <button class="card-btn" onclick="editSlot(this)">✏️</button>
-      <button class="card-btn del" onclick="deleteSlot(this)">🗑️</button>
-    </div>`;
-  return slot;
+  const slot = btn.closest('.agenda-slot');
+  const fbkey = slot.dataset.fbkey;
+  if (confirm('Slot löschen?')) {
+    if (fbkey) window._fbAgenda.del(fbkey);
+    else slot.remove();
+  }
 }
 
 // ── TABLE FILTER ──
@@ -918,33 +896,18 @@ function saveModal() {
     const desc  = document.getElementById('f-adesc').value||'';
     const tags  = document.getElementById('f-atags').value||'';
     const day   = document.getElementById('f-aday').value;
-    const target = day === 'so' ? document.getElementById('agenda-so') : document.getElementById('agenda-sa');
-    const newSlot = buildSlot(time, title, desc, tags, day);
-    insertSlotSorted(target, newSlot, time);
+    window._fbAgenda.add({ time, title, desc, tags, day });
     closeModal(); showToast('✅ Slot hinzugefügt!'); return;
   }
   if (modalType === '_slot-edit') {
-    const slot  = window._slotEditTarget;
+    const fbkey = window._slotEditFbKey;
     const time  = (document.getElementById('f-atime').value||'').trim();
     const title = (document.getElementById('f-atitle').value||'').trim();
-    if (!slot || !title) return;
+    if (!title) return;
     const desc  = document.getElementById('f-adesc').value||'';
     const tags  = document.getElementById('f-atags').value||'';
     const day   = document.getElementById('f-aday').value;
-    slot.querySelector('.agenda-time').textContent = time;
-    slot.querySelector('.agenda-content strong').textContent = title;
-    slot.querySelector('.agenda-content p').textContent = desc;
-    slot.querySelectorAll('.method-tag').forEach(t => t.remove());
-    const content = slot.querySelector('.agenda-content');
-    if (tags.trim()) tags.split(',').forEach(t => {
-      const s = document.createElement('span'); s.className='method-tag'; s.textContent=t.trim(); content.appendChild(s);
-    });
-    // move to correct day block if changed
-    const newDay = day;
-    slot.dataset.day = newDay;
-    const target = newDay === 'so' ? document.getElementById('agenda-so') : document.getElementById('agenda-sa');
-    slot.remove();
-    insertSlotSorted(target, slot, time);
+    if (fbkey) window._fbAgenda.upd(fbkey, { time, title, desc, tags, day });
     closeModal(); showToast('✅ Gespeichert!'); return;
   }
   if (modalType === 'ziel') {
