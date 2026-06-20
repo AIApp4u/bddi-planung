@@ -280,6 +280,7 @@
         <td>${d.kpi||''}</td>
         <td><span class="tag tag-yellow">Offen</span></td>
         <td class="ziel-act" style="display:${isAdmin?'':'none'}">
+          <button class="card-btn" onclick="editZiel(this)" style="margin-right:4px">✏️</button>
           <button class="card-btn del" onclick="deleteZiel(this)">🗑️</button>
         </td>`;
       tbody.appendChild(tr);
@@ -293,6 +294,7 @@
   window._fbZiele = {
     add: (data) => push(zieleRef, { ...data, ts: Date.now() }),
     del: (key)  => remove(ref(db, `jahresziele/${key}`)),
+    upd: (key, data) => update(ref(db, `jahresziele/${key}`), data),
     seed: seedZieleIfEmpty,
     subscribe: subscribeZiele
   };
@@ -334,6 +336,7 @@
       card.dataset.fbkey = key;
       card.innerHTML = `
         <div class="card-admin-btns" style="display:${isAdmin?'flex':'none'}">
+          <button class="card-btn" onclick="editCard(this)" style="margin-right:4px">✏️</button>
           <button class="card-btn del" onclick="deleteCard(this)">🗑️</button>
         </div>
         <h4>${d.titel||''} ${d.deadline ? `<span class="tag tag-blue">${d.deadline}</span>` : ''}</h4>
@@ -352,6 +355,7 @@
   window._fbProjekte = {
     add: (data) => push(projekteRef, { ...data, ts: Date.now() }),
     del: (key)  => remove(ref(db, `projekte/${key}`)),
+    upd: (key, data) => update(ref(db, `projekte/${key}`), data),
     seed: seedProjekteIfEmpty,
     subscribe: subscribeProjekte
   };
@@ -1051,6 +1055,33 @@ function deleteCard(btn) {
     else card.remove();
   }
 }
+function editCard(btn) {
+  const card = btn.closest('.card');
+  const fbkey = card.dataset.fbkey;
+  const curTitel  = card.querySelector('h4')?.childNodes[0]?.textContent?.trim() || '';
+  const curDl     = card.querySelector('h4 .tag')?.textContent?.trim() || '';
+  const fields    = card.querySelectorAll('.card-field');
+  let curZiel='', curVer='', curSchr='', curKpi='';
+  fields.forEach(f => {
+    const lbl = f.querySelector('label')?.textContent?.trim() || '';
+    const val = f.querySelector('p')?.textContent?.trim() || '';
+    if (lbl === 'Ziel') curZiel = val;
+    else if (lbl === 'Verantwortliche') curVer = val;
+    else if (lbl === 'Nächste 3 Schritte') curSchr = val;
+    else if (lbl === 'KPI') curKpi = val;
+  });
+  modalType = '_projekt-edit';
+  window._projektEditFbKey = fbkey;
+  document.getElementById('modal-title').textContent = 'Projektkarte bearbeiten ✏️';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-group"><label>Titel + Emoji *</label><input id="f-ptit" value="${curTitel.replace(/"/g,'&quot;')}"></div>
+    <div class="form-group"><label>Deadline</label><input id="f-pdl" value="${curDl.replace(/"/g,'&quot;')}"></div>
+    <div class="form-group"><label>Ziel</label><textarea id="f-pziel">${curZiel}</textarea></div>
+    <div class="form-group"><label>Verantwortliche</label><input id="f-pver" value="${curVer.replace(/"/g,'&quot;')}"></div>
+    <div class="form-group"><label>Nächste 3 Schritte</label><textarea id="f-pschr">${curSchr}</textarea></div>
+    <div class="form-group"><label>KPI</label><input id="f-pkpi" value="${curKpi.replace(/"/g,'&quot;')}"></div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
 function deleteZiel(btn) {
   const tr = btn.closest('tr');
   const fbkey = tr.dataset.fbkey;
@@ -1058,6 +1089,29 @@ function deleteZiel(btn) {
     if (fbkey && window._fbZiele) window._fbZiele.del(fbkey);
     else tr.remove();
   }
+}
+function editZiel(btn) {
+  const tr = btn.closest('tr');
+  const fbkey = tr.dataset.fbkey;
+  // Read current values from the row cells
+  const cells = tr.querySelectorAll('td');
+  const curZiel   = cells[1]?.querySelector('strong')?.textContent || '';
+  const curWarum  = cells[2]?.textContent || '';
+  const curVerant = cells[3]?.querySelector('.tag')?.textContent || '';
+  const curMass   = cells[4]?.textContent || '';
+  const curDead   = cells[5]?.textContent || '';
+  const curKpi    = cells[6]?.textContent || '';
+  modalType = '_ziel-edit';
+  window._zielEditFbKey = fbkey;
+  document.getElementById('modal-title').textContent = 'Ziel bearbeiten ✏️';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-group"><label>Ziel *</label><input id="f-ziel" value="${curZiel.replace(/"/g,'&quot;')}"></div>
+    <div class="form-group"><label>Warum?</label><input id="f-warum" value="${curWarum.replace(/"/g,'&quot;')}"></div>
+    <div class="form-group"><label>Verantwortlich</label><input id="f-verant" value="${curVerant.replace(/"/g,'&quot;')}"></div>
+    <div class="form-group"><label>Maßnahme</label><input id="f-mass" value="${curMass.replace(/"/g,'&quot;')}"></div>
+    <div class="form-group"><label>Deadline</label><input id="f-dead" value="${curDead.replace(/"/g,'&quot;')}"></div>
+    <div class="form-group"><label>KPI</label><input id="f-kpi" value="${curKpi.replace(/"/g,'&quot;')}"></div>`;
+  document.getElementById('modal-overlay').classList.add('open');
 }
 function deleteMassnahme(btn) {
   const tr = btn.closest('tr');
@@ -1166,6 +1220,23 @@ function saveModal() {
     if (fbkey) window._fbAgenda.upd(fbkey, { time, title, desc, tags, day });
     closeModal(); showToast('✅ Gespeichert!'); return;
   }
+  if (modalType === '_ziel-edit') {
+    const fbkey = window._zielEditFbKey;
+    const ziel = (document.getElementById('f-ziel').value||'').trim();
+    if (!ziel) return;
+    if (fbkey && window._fbZiele) {
+      window._fbZiele.upd(fbkey, {
+        ziel,
+        warum:          document.getElementById('f-warum').value,
+        verantwortlich: document.getElementById('f-verant').value,
+        massnahme:      document.getElementById('f-mass').value,
+        deadline:       document.getElementById('f-dead').value,
+        kpi:            document.getElementById('f-kpi').value
+      }).then(() => showToast('✅ Ziel aktualisiert!'))
+        .catch(e => showToast('❌ Fehler: ' + e.message));
+    }
+    closeModal(); return;
+  }
   if (modalType === 'ziel') {
     const ziel = (document.getElementById('f-ziel').value||'').trim();
     if (!ziel) return;
@@ -1190,6 +1261,22 @@ function saveModal() {
       status:    'offen'
     }).then(() => showToast('✅ Maßnahme gespeichert!'))
       .catch(e => showToast('❌ Fehler: ' + e.message));
+  } else if (modalType === '_projekt-edit') {
+    const fbkey = window._projektEditFbKey;
+    const titel = (document.getElementById('f-ptit').value||'').trim();
+    if (!titel) return;
+    if (fbkey && window._fbProjekte) {
+      window._fbProjekte.upd(fbkey, {
+        titel,
+        deadline:        document.getElementById('f-pdl').value,
+        ziel:            document.getElementById('f-pziel').value,
+        verantwortliche: document.getElementById('f-pver').value,
+        schritte:        document.getElementById('f-pschr').value,
+        kpi:             document.getElementById('f-pkpi').value
+      }).then(() => showToast('✅ Projekt aktualisiert!'))
+        .catch(e => showToast('❌ Fehler: ' + e.message));
+    }
+    closeModal(); return;
   } else if (modalType === 'projekt') {
     const titel = (document.getElementById('f-ptit').value||'').trim();
     if (!titel) return;
