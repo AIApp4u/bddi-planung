@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BDDI Jahresplanung 2026/27 – Teilnehmerformular</title>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyDkjdSx1iZLsfN7k267Ep-8CqdlgJmJ8wk",
+    authDomain: "bddi-jahresplanung.firebaseapp.com",
+    databaseURL: "https://bddi-jahresplanung-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "bddi-jahresplanung",
+    storageBucket: "bddi-jahresplanung.firebasestorage.app",
+    messagingSenderId: "630411437728",
+    appId: "1:630411437728:web:fcf8f144d3520b437acbc5"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+  window._fbFormular = {
+    submit: (data) => push(ref(db, 'formular-antworten'), { ...data, ts: Date.now() })
+  };
+</script>
+<style>
+  :root {
+    --primary: #1a5276;
+    --accent: #2e86c1;
+    --light: #d6eaf8;
+    --green: #1e8449;
+    --red: #c0392b;
+    --yellow: #d4ac0d;
+    --bg: #f0f4f8;
+    --white: #ffffff;
+    --border: #ccd6e0;
+    --text: #1a252f;
+    --muted: #5d6d7e;
+    --success: #1e8449;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  header {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: white;
+    padding: 20px 24px;
+    text-align: center;
+  }
+  header h1 { font-size: 20px; font-weight: 700; }
+  header p { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+
+  /* Progress bar */
+  .progress-container {
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .progress-track { flex: 1; height: 8px; background: #e0e6ed; border-radius: 4px; }
+  .progress-fill { height: 8px; background: var(--accent); border-radius: 4px; transition: width 0.3s; }
+  .progress-label { font-size: 12px; font-weight: 700; color: var(--primary); white-space: nowrap; }
+
+  /* Step indicators */
+  .steps {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 24px;
+    flex-wrap: wrap;
+  }
+  .step-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: var(--muted);
+    cursor: pointer; transition: all 0.2s; background: white;
+  }
+  .step-dot.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .step-dot.done { background: var(--green); color: white; border-color: var(--green); }
+
+  main { max-width: 680px; margin: 0 auto; padding: 24px 16px 100px; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--border);
+  }
+  .page-header .step-num {
+    font-size: 11px; font-weight: 700; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .page-header h2 { font-size: 20px; color: var(--primary); margin: 4px 0; }
+  .page-header p { font-size: 13px; color: var(--muted); }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  label.question {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+  label.question .tr { font-size: 12px; color: var(--muted); font-weight: 400; display: block; }
+
+  input[type="text"],
+  input[type="email"],
+  textarea,
+  select {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    background: white;
+    transition: border-color 0.2s;
+    color: var(--text);
+  }
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(46,134,193,0.15);
+  }
+  textarea { resize: vertical; min-height: 90px; }
+
+  .radio-group, .checkbox-group {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .radio-group label, .checkbox-group label {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--border);
+    cursor: pointer; background: white; font-size: 13px; transition: all 0.15s;
+  }
+  .radio-group label:hover, .checkbox-group label:hover {
+    border-color: var(--accent); background: var(--light);
+  }
+  .radio-group input, .checkbox-group input { margin-top: 2px; flex-shrink: 0; }
+
+  /* SWOT sticky notes style */
+  .swot-mini {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  .swot-field label.swot-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;
+  }
+  .swot-field textarea {
+    min-height: 100px;
+    background: #fffde7;
+    border-color: #f9a825;
+  }
+  .swot-field.s textarea { background: #e8f5e9; border-color: #66bb6a; }
+  .swot-field.w textarea { background: #fce4ec; border-color: #ef9a9a; }
+  .swot-field.o textarea { background: #e3f2fd; border-color: #64b5f6; }
+  .swot-field.t textarea { background: #fff3e0; border-color: #ffb74d; }
+
+  /* Scale rating */
+  .scale-row {
+    display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;
+  }
+  .scale-btn {
+    width: 40px; height: 40px; border-radius: 8px; border: 2px solid var(--border);
+    background: white; font-size: 13px; font-weight: 700; cursor: pointer;
+    color: var(--muted); transition: all 0.15s;
+  }
+  .scale-btn.selected { background: var(--accent); color: white; border-color: var(--accent); }
+  .scale-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  /* Priority ranking */
+  .priority-list { display: flex; flex-direction: column; gap: 6px; }
+  .priority-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; background: white; border: 1.5px solid var(--border);
+    border-radius: 8px; font-size: 13px;
+  }
+  .priority-item .rank {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--light); color: var(--primary);
+    font-weight: 700; font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .prio-select { width: 60px; border: 1.5px solid var(--border); border-radius: 6px; padding: 4px 6px; font-size: 13px; }
+
+  /* Navigation */
+  .nav-btns {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: white; border-top: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    max-width: 680px; margin: 0 auto;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+  }
+
+  .btn {
+    padding: 10px 24px; border-radius: 8px; border: none;
+    font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: var(--primary); }
+  .btn-secondary { background: var(--bg); color: var(--muted); border: 1.5px solid var(--border); }
+  .btn-secondary:hover { background: #e0e8f0; }
+  .btn-success { background: var(--green); color: white; }
+  .btn-success:hover { background: #196f3d; }
+
+  /* Thank you screen */
+  .thankyou {
+    text-align: center;
+    padding: 60px 24px;
+  }
+  .thankyou .icon { font-size: 64px; margin-bottom: 16px; }
+  .thankyou h2 { font-size: 24px; color: var(--primary); margin-bottom: 8px; }
+  .thankyou p { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+  .export-btn {
+    background: var(--accent); color: white; border: none;
+    border-radius: 8px; padding: 12px 28px; font-size: 14px;
+    font-weight: 700; cursor: pointer; margin: 6px;
+  }
+  .export-btn:hover { background: var(--primary); }
+  .export-btn.outline {
+    background: none; color: var(--accent);
+    border: 2px solid var(--accent);
+  }
+
+  .required-star { color: var(--red); margin-left: 2px; }
+
+  .info-note {
+    background: var(--light); border-left: 4px solid var(--accent);
+    border-radius: 0 8px 8px 0; padding: 10px 14px;
+    font-size: 12px; color: var(--primary); margin-bottom: 16px;
+  }
+
+  .char-count { font-size: 11px; color: var(--muted); text-align: right; margin-top: 2px; }
+
+  @media (max-width: 500px) {
+    .swot-mini { grid-template-columns: 1fr; }
+    .scale-btn { width: 34px; height: 34px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🕊️ BDDI Jahresplanung 2026/27</h1>
+  <p>Teilnehmerformular · Katılımcı Formu &nbsp;|&nbsp; ca. 10–15 Minuten</p>
+</header>
+
+<div class="progress-container">
+  <div class="steps" id="step-indicators"></div>
+  <div class="progress-label" id="progress-label">1 / 6</div>
+</div>
+
+<main id="main-content">
+
+<!-- PAGE 0: Angaben zur Person -->
+<div class="page active" data-page="0">
+  <div class="page-header">
+    <div class="step-num">Schritt 1 · Adım 1</div>
+    <h2>Angaben zur Person</h2>
+    <p>Kişisel Bilgiler</p>
+  </div>
+
+  <div class="form-group">
+    <label class="question">Name / Ad Soyad <span class="required-star">*</span></label>
+    <input type="text" id="p-name" placeholder="Vor- und Nachname · Ad ve Soyad">
+  </div>
+
+  <div class="form-group">
+    <label class="question">E-Mail</label>
+    <input type="email" id="p-email" placeholder="name@beispiel.de">
+  </div>
+
+  <div class="form-group">
+    <label class="question">Bundesland / Eyalet <span class="required-star">*</span></label>
+    <select id="p-bl">
+      <option value="">— Bitte wählen / Seçiniz —</option>
+      <option>Baden-Württemberg</option>
+      <option>Bayern</option>
+      <option>Berlin</option>
+      <option>Brandenburg</option>
+      <option>Bremen</option>
+      <option>Hamburg</option>
+      <option>Hessen</option>
+      <option>Mecklenburg-Vorpommern</option>
+      <option>Niedersachsen</option>
+      <option>Nordrhein-Westfalen</option>
+      <option>Rheinland-Pfalz</option>
+      <option>Saarland</option>
+      <option>Sachsen</option>
+      <option>Sachsen-Anhalt</option>
+      <option>Schleswig-Holstein</option>
+      <option>Thüringen</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label class="question">Meine Rolle(n) im BDDI <span class="required-star">*</span>
+      <span class="tr">BDDI'deki Rolüm</span>
+    </label>
+    <div class="checkbox-group">
+      <label><input type="checkbox" name="rolle" value="Eyalet Diyalogcusu"> Eyalet Diyalogcusu</label>
+      <label><input type="checkbox" name="rolle" value="İl Diyalogcusu"> İl Diyalogcusu</label>
+      <label><input type="checkbox" name="rolle" value="Genç Diyalogcu"> Genç Diyalogcu</label>
+      <label><input type="checkbox" name="rolle" value="Medien AG"> Medien AG</label>
+      <label><input type="checkbox" name="rolle" value="Time to Help"> Time to Help</label>
+      <label><input type="checkbox" name="rolle" value="Young Professionals"> Young Professionals</label>
+      <label><input type="checkbox" name="rolle" value="Akademie / DialogHub"> Akademie / DialogHub</label>
+      <label><input type="checkbox" name="rolle" value="BDDI Vorstand / Geschäftsstelle"> BDDI Vorstand / Geschäftsstelle</label>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="question">Wie viele Jahre bist du schon im BDDI aktiv?
+      <span class="tr">Kaç yıldır BDDI'de aktifsin?</span>
+    </label>
+    <div class="radio-group">
+      <label><input type="radio" name="jahre" value="< 1"> Weniger als 1 Jahr / 1 yıldan az</label>
+      <label><input type="radio" name="jahre" value="1-3"> 1–3 Jahre / Yıl</label>
+      <label><input type="radio" name="jahre" value="4-7"> 4–7 Jahre / Yıl</label>
+      <label><input type="radio" name="jahre" value="> 7"> Mehr als 7 Jahre / 7 yıldan fazla</label>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 1: Rückblick -->
+<div class="page" data-page="1">
+  <div class="page-header">
+    <div class="step-num">Schritt 2 · Adım 2</div>
+    <h2>Rückblick 2025/26</h2>
+    <p>Geri Bakış — Was lief gut, was nicht?</p>
+  </div>
+
+  <div class="info-note">💡 Bitte schreib konkret und ehrlich — das hilft uns, besser zu werden.<br>
+  Lütfen somut ve dürüst yaz — bu bize daha iyi olmamıza yardımcı olur.</div>
+
+  <div class="form-group">
+    <label class="question">1. Was war im letzten Schuljahr in der Dialogarbeit besonders erfolgreich? <span class="required-star">*</span>
+      <span class="tr">Geçen yılın en başarılı kısmı neydi?</span>
+    </label>
+    <textarea id="rb1" placeholder="z.B. Ramadan-Veranstaltungen, neue Kontakte, Jugendprojekte..." oninput="countChars(this, 'c-rb1')"></textarea>
+    <div class="char-count" id="c-rb1">0 Zeichen</div>
+  </div>
+
+  <div class="form-group">
+    <label class="question">2. Welche Projekte oder Abläufe haben nicht gut funktioniert? <span class="required-star">*</span>
+      <span class="tr">Hangi projeler veya süreçler iyi işlemedi?</span>
+    </label>
+    <textarea id="rb2" placeholder="z.B. Kommunikation, Koordination, Materialien..." oninput="countChars(this, 'c-rb2')"></textarea>
+    <div class="char-count" id="c-rb2">0 Zeichen</div>
+  </div>
+
+  <div class="form-group">
+    <label class="question">3. Wo gab es Kommunikationsprobleme?
+      <span class="tr">İletişim sorunları nerede yaşandı?</span>
+    </label>
+    <div class="checkbox-group">
+      <label><input type="checkbox" name="komm" value="Bundesland ↔ Stadt"> Zwischen Bundesland und Stadt / Eyalet ve İl arasında</label>
+      <label><input type="checkbox" name="komm" value="Jugend ↔ Erwachsene"> Zwischen Jugend und Erwachsenen / Gençler ve Yetişkinler</label>
+      <label><input type="checkbox" name="komm" value="BDDI ↔ Bundesländer"> Zwischen BDDI-Zentrale und Bundesländern</label>
+      <label><input type="checkbox" name="komm" value="Medien AG ↔ Rest"> Medien AG und restliche Gruppen</label>
+      <label><input type="checkbox" name="komm" value="Keine Probleme"> Keine größeren Probleme / Büyük sorun yok</label>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="question">4. Welche Ressourcen haben gefehlt?
+      <span class="tr">Hangi kaynaklar eksikti?</span>
+    </label>
+    <div class="checkbox-group">
+      <label><input type="checkbox" name="ressource" value="Zeit"> Zeit / Zaman</label>
+      <label><input type="checkbox" name="ressource" value="Geld"> Geld / Para</label>
+      <label><input type="checkbox" name="ressource" value="Materialien"> Materialien (Handbuch, Vorlagen…) / Materyaller</label>
+      <label><input type="checkbox" name="ressource" value="Digitale Tools"> Digitale Tools / Dijital araçlar</label>
+      <label><input type="checkbox" name="ressource" value="Koordination"> Koordination / Koordinasyon</label>
+      <label><input type="checkbox" name="ressource" value="Schulung"> Schulung & Weiterbildung / Eğitim</label>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="question">5. Welche Zielgruppen habt ihr gut erreicht? Welche kaum?
+      <span class="tr">Hangi hedef kitlelere iyi ulaştınız, hangilerine ulaşamadınız?</span>
+    </label>
+    <textarea id="rb5" placeholder="z.B. Gut: Schulen, Vereine. Kaum: Medien, Politiker..."></textarea>
+  </div>
+
+  <div class="form-group">
+    <label class="question">6. Was sollte das BDDI sofort stoppen oder grundlegend ändern?
+      <span class="tr">BDDI'nin derhal durdurması veya köklü değiştirmesi gereken şeyler?</span>
+    </label>
+    <textarea id="rb6" placeholder="Ehrliche Antwort willkommen / Dürüst cevap bekliyoruz..."></textarea>
+  </div>
+</div>
+
+<!-- PAGE 2: SWOT -->
+<div class="page" data-page="2">
+  <div class="page-header">
+    <div class="step-num">Schritt 3 · Adım 3</div>
+    <h2>SWOT-Analyse 2026/27</h2>
+    <p>Deine persönliche Einschätzung · Kişisel değerlendirmen</p>
+  </div>
+
+  <div class="info-note">
+    💡 Schreib je Feld mindestens 2–3 Punkte. Stichwörter reichen.<br>
+    Her alana en az 2–3 madde yaz. Anahtar kelimeler yeterli.
+  </div>
+
+  <div class="swot-mini">
+    <div class="swot-field s">
+      <label class="swot-label">💪 Stärken / Güçlü Yönler</label>
+      <textarea id="sw-s" placeholder="Was machen wir gut?&#10;Ne yapıyoruz iyi?"></textarea>
+    </div>
+    <div class="swot-field w">
+      <label class="swot-label">⚠️ Schwächen / Zayıf Yönler</label>
+      <textarea id="sw-w" placeholder="Was fehlt uns?&#10;Neyimiz eksik?"></textarea>
+    </div>
+    <div class="swot-field o">
+      <label class="swot-label">🌱 Chancen / Fırsatlar</label>
+      <textarea id="sw-o" placeholder="Was können wir nutzen?&#10;Neyi kullanabiliriz?"></textarea>
+    </div>
+    <div class="swot-field t">
+      <label class="swot-label">🔴 Risiken / Tehditler</label>
+      <textarea id="sw-t" placeholder="Was bedroht uns?&#10;Bizi ne tehdit ediyor?"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 3: Ausblick Ziele -->
+<div class="page" data-page="3">
+  <div class="page-header">
+    <div class="step-num">Schritt 4 · Adım 4</div>
+    <h2>Ausblick 2026/27</h2>
+    <p>Ziele & Prioritäten · Hedefler ve Öncelikler</p>
+  </div>
+
+  <div class="form-group">
+    <label class="question">7. Welche 3 Ziele sollten wir 2026/27 unbedingt erreichen? <span class="required-star">*</span>
+      <span class="tr">2026/27'de kesinlikle ulaşmamız gereken 3 hedef?</span>
+    </label>
+    <textarea id="az1" placeholder="Ziel 1:&#10;Ziel 2:&#10;Ziel 3:" style="min-height:110px"></textarea>
+  </div>
+
+  <div class="form-group">
+    <label class="question">8. Welche Projekte sollen bundesweit koordiniert, welche lokal bleiben?
+      <span class="tr">Hangi projeler ulusal düzeyde koordine edilmeli, hangisi yerel kalmalı?</span>
+    </label>
+    <textarea id="az2" placeholder="Bundesweit: ...&#10;Lokal: ..."></textarea>
+  </div>
+
+  <div class="form-group">
+    <label class="question">9. Wo brauchen wir einheitliche Materialien?
+      <span class="tr">Hangi alanlarda ortak materyallere ihtiyacımız var?</span>
+    </label>
+    <div class="checkbox-group">
+      <label><input type="checkbox" name="mat" value="Handbuch Dialog"> Dialog-Handbuch / Diyalog El Kitabı</label>
+      <label><input type="checkbox" name="mat" value="Dialogheft"> Dialogheft / Diyalog Dergisi</label>
+      <label><input type="checkbox" name="mat" value="Ramadan-Handbuch"> Ramadan-Handbuch / Ramazan El Kitabı</label>
+      <label><input type="checkbox" name="mat" value="Social Media Vorlagen"> Social Media Vorlagen / Şablonlar</label>
+      <label><input type="checkbox" name="mat" value="Pressevorlagen"> Pressevorlagen / Basın Şablonları</label>
+      <label><input type="checkbox" name="mat" value="VIP-Kontaktlisten"> VIP-Kontaktlisten / VIP Listesi</label>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="question">10. Prioritäten setzen — Wie wichtig sind diese Themen? (1 = unwichtig, 5 = sehr wichtig)
+      <span class="tr">Önceliklendirme — Bu konular ne kadar önemli? (1 = önemsiz, 5 = çok önemli)</span>
+    </label>
+
+    <div style="margin-top:12px">
+      <div id="prio-items"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 4: Gruppen & Rollen -->
+<div class="page" data-page="4">
+  <div class="page-header">
+    <div class="step-num">Schritt 5 · Adım 5</div>
+    <h2>Gruppen & Chancen</h2>
+    <p>Gruplar & Fırsatlar</p>
+  </div>
+
+  <div class="form-group">
+    <label class="question">11. Welche Rolle sollen die einzelnen Gruppen 2026/27 übernehmen?
+      <span class="tr">Hangi gruplar 2026/27'de hangi rolleri üstlenmeli?</span>
+    </label>
+    <textarea id="gr1" placeholder="z.B. Genç Diyalogcular: Jugend-Akademie leiten&#10;Medien AG: Alle Posts koordinieren&#10;Time to Help: Sozialprojekte..."></textarea>
+  </div>
+
+  <div class="form-group">
+    <label class="question">12. Wie können DialogHub, AI-Agents oder DDP 2027 eure Arbeit verbessern?
+      <span class="tr">DialogHub, AI-Agents veya DDP 2027 çalışmanızı nasıl iyileştirebilir?</span>
+    </label>
+    <textarea id="gr2" placeholder="Konkrete Ideen und Anwendungsfälle..."></textarea>
+  </div>
+
+  <div class="form-group">
+    <label class="question">13. Ich bin bereit, folgende Aufgaben/Verantwortung zu übernehmen:
+      <span class="tr">Aşağıdaki görevleri/sorumlulukları üstlenmeye hazırım:</span>
+    </label>
+    <textarea id="gr3" placeholder="z.B. Ramadan-Handbuch Redaktion, VIP-Liste für NRW, Genç Diyalogcular Koordination..."></textarea>
+  </div>
+
+  <div class="form-group">
+    <label class="question">14. Wie zufrieden bist du insgesamt mit der BDDI-Arbeit im letzten Jahr? <span class="required-star">*</span>
+      <span class="tr">Genel olarak geçen yılın BDDI çalışmasından ne kadar memnunsun?</span>
+    </label>
+    <div class="scale-row" id="satis-scale">
+      <button class="scale-btn" onclick="selectScale('satis', 1)">1</button>
+      <button class="scale-btn" onclick="selectScale('satis', 2)">2</button>
+      <button class="scale-btn" onclick="selectScale('satis', 3)">3</button>
+      <button class="scale-btn" onclick="selectScale('satis', 4)">4</button>
+      <button class="scale-btn" onclick="selectScale('satis', 5)">5</button>
+    </div>
+    <div class="scale-labels"><span>😞 Unzufrieden</span><span>😊 Sehr zufrieden</span></div>
+    <input type="hidden" id="satis-val">
+  </div>
+
+  <div class="form-group">
+    <label class="question">15. Wie hoch ist deine Bereitschaft, dich 2026/27 stärker zu engagieren?
+      <span class="tr">2026/27'de daha fazla katkı sağlama isteğin ne kadar?</span>
+    </label>
+    <div class="scale-row" id="engage-scale">
+      <button class="scale-btn" onclick="selectScale('engage', 1)">1</button>
+      <button class="scale-btn" onclick="selectScale('engage', 2)">2</button>
+      <button class="scale-btn" onclick="selectScale('engage', 3)">3</button>
+      <button class="scale-btn" onclick="selectScale('engage', 4)">4</button>
+      <button class="scale-btn" onclick="selectScale('engage', 5)">5</button>
+    </div>
+    <div class="scale-labels"><span>😐 Gering / Düşük</span><span>🔥 Sehr hoch / Çok yüksek</span></div>
+    <input type="hidden" id="engage-val">
+  </div>
+</div>
+
+<!-- PAGE 5: Freitext & Abschluss -->
+<div class="page" data-page="5">
+  <div class="page-header">
+    <div class="step-num">Schritt 6 · Adım 6</div>
+    <h2>Freie Anmerkungen</h2>
+    <p>Serbest Görüşler — Fast fertig! / Neredeyse bitti!</p>
+  </div>
+
+  <div class="form-group">
+    <label class="question">16. Was sollte beim nächsten Mal anders gemacht werden, das noch nicht in den vorherigen Fragen stand?
+      <span class="tr">Önceki sorularda yer almayan, bir dahaki seferde farklı yapılması gereken şeyler?</span>
+    </label>
+    <textarea id="fr1" placeholder="Alles was dir noch auf dem Herzen liegt... / Aklındaki her şey..."></textarea>
+  </div>
+
+  <div class="form-group">
+    <label class="question">17. Mein wichtigster Wunsch an das BDDI für 2026/27:
+      <span class="tr">2026/27 için BDDI'ye en önemli dileğim:</span>
+    </label>
+    <textarea id="fr2" placeholder="Ein Satz genügt / Bir cümle yeter..." style="min-height:70px"></textarea>
+  </div>
+
+  <div class="form-group">
+    <label class="question">18. Gibt es ein Thema, das wir unbedingt auf die Tagesordnung nehmen müssen?
+      <span class="tr">Gündeme alınması gereken bir konu var mı?</span>
+    </label>
+    <textarea id="fr3" placeholder="Thema / Konu..."></textarea>
+  </div>
+
+  <div class="form-group">
+    <label class="question">Darf dein Name in der Auswertung sichtbar sein?
+      <span class="tr">Değerlendirmede adın görünür olabilir mi?</span>
+    </label>
+    <div class="radio-group">
+      <label><input type="radio" name="anonym" value="ja"> Ja, gerne / Evet, olur</label>
+      <label><input type="radio" name="anonym" value="anonym"> Nein, lieber anonym / Hayır, anonim tercih ederim</label>
+    </div>
+  </div>
+</div>
+
+<!-- Thank You -->
+<div class="page" data-page="done">
+  <div class="thankyou">
+    <div class="icon">✅</div>
+    <h2>Vielen Dank! / Teşekkürler!</h2>
+    <p>Deine Antworten wurden gespeichert.<br>Cevapların kaydedildi.</p>
+    <br>
+    <button class="export-btn" onclick="exportCSV()">📥 Meine Antworten als CSV speichern</button>
+    <button class="export-btn" onclick="printAnswers()">🖨️ Antworten drucken / Yazdır</button>
+    <button class="export-btn outline" onclick="restartForm()">🔄 Neues Formular / Yeni Form</button>
+    <br><br>
+    <div id="summary-box" style="text-align:left; background:white; border-radius:12px; padding:20px; margin-top:16px; font-size:12px; color: var(--muted); border: 1px solid var(--border);"></div>
+  </div>
+</div>
+
+</main>
+
+<!-- Nav buttons -->
+<div class="nav-btns" id="nav-btns">
+  <button class="btn btn-secondary" id="btn-back" onclick="navigate(-1)" style="display:none">← Zurück / Geri</button>
+  <div style="font-size:12px; color:var(--muted)" id="nav-hint"></div>
+  <button class="btn btn-primary" id="btn-next" onclick="navigate(1)">Weiter / İleri →</button>
+</div>
+
+<script>
+const TOTAL_PAGES = 6;
+let currentPage = 0;
+const scaleValues = {};
+
+// ── AUTO-SAVE / RESUME ──
+const DRAFT_KEY = 'bddi_formular_draft';
+
+function saveDraft() {
+  try {
+    const draft = {
+      page: currentPage,
+      fields: {},
+      checkboxes: {},
+      radios: {},
+      scales: { ...scaleValues }
+    };
+    document.querySelectorAll('input[type="text"], input[type="email"], textarea, select').forEach(el => {
+      if (el.id) draft.fields[el.id] = el.value;
+    });
+    document.querySelectorAll('input[type="checkbox"]').forEach(el => {
+      if (el.name && el.value) draft.checkboxes[el.name + '__' + el.value] = el.checked;
+    });
+    document.querySelectorAll('input[type="radio"]').forEach(el => {
+      if (el.checked && el.name) draft.radios[el.name] = el.value;
+    });
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  } catch(e) {}
+}
+
+function restoreDraft(draft) {
+  // fields
+  Object.entries(draft.fields || {}).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  });
+  // checkboxes
+  Object.entries(draft.checkboxes || {}).forEach(([key, checked]) => {
+    const [name, value] = key.split('__');
+    const el = document.querySelector(`input[type="checkbox"][name="${name}"][value="${value}"]`);
+    if (el) el.checked = checked;
+  });
+  // radios
+  Object.entries(draft.radios || {}).forEach(([name, value]) => {
+    const el = document.querySelector(`input[type="radio"][name="${name}"][value="${value}"]`);
+    if (el) el.checked = true;
+  });
+  // scale values + UI
+  Object.entries(draft.scales || {}).forEach(([key, val]) => {
+    scaleValues[key] = val;
+    if (key.startsWith('prio_')) {
+      const idx = parseInt(key.replace('prio_',''));
+      const btns = document.querySelectorAll(`#prio-scale-${idx} .scale-btn`);
+      btns.forEach((b, i) => b.classList.toggle('selected', i < val));
+    } else if (key === 'satis') {
+      document.querySelectorAll('#satis-scale .scale-btn').forEach((b,i) => b.classList.toggle('selected', i < val));
+    } else if (key === 'engage') {
+      document.querySelectorAll('#engage-scale .scale-btn').forEach((b,i) => b.classList.toggle('selected', i < val));
+    }
+  });
+}
+
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch(e) {}
+}
+
+function checkAndOfferResume() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return;
+    const draft = JSON.parse(raw);
+    if (!draft || draft.page === undefined || draft.page <= 0) return;
+    const stepLabel = draft.page + 1;
+    const banner = document.createElement('div');
+    banner.id = 'resume-banner';
+    banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1a5276;color:white;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;z-index:9999;font-family:Poppins,sans-serif;font-size:13px;box-shadow:0 -2px 12px rgba(0,0,0,0.2)';
+    banner.innerHTML = `
+      <span>📋 Du hast ein angefangenes Formular (Schritt ${stepLabel}/6). Weitermachen? / Kaldığın yerden devam et?</span>
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <button onclick="resumeDraft()" style="background:#27ae60;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-family:Poppins,sans-serif;font-weight:600">✅ Weitermachen</button>
+        <button onclick="discardDraft()" style="background:rgba(255,255,255,0.2);color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-family:Poppins,sans-serif">🗑️ Neu starten</button>
+      </div>`;
+    document.body.appendChild(banner);
+    window._pendingDraft = draft;
+  } catch(e) {}
+}
+
+function resumeDraft() {
+  const draft = window._pendingDraft;
+  if (!draft) return;
+  restoreDraft(draft);
+  currentPage = Math.min(draft.page, TOTAL_PAGES - 1);
+  showPage(currentPage);
+  document.getElementById('resume-banner')?.remove();
+}
+
+function discardDraft() {
+  clearDraft();
+  document.getElementById('resume-banner')?.remove();
+  window._pendingDraft = null;
+}
+
+// Priority items
+const prioItems = [
+  'Eyalet-Dialogarbeit systematisieren / Eyalet çalışmasını sistemleştirme',
+  'Genç Diyalogcular stärken / Gençleri güçlendirme',
+  'Ramadan-Handbuch fertigstellen / Ramazan El Kitabı',
+  'VIP-Netzwerk aufbauen / VIP ağı kurma',
+  'Medienarbeit verbessern / Medya çalışmasını geliştirme',
+  'DialogHub & AI-Agents / Dijital araçlar',
+  'DDP 2027 vorbereiten / DDP 2027 hazırlığı',
+  'Dialogheft 2026/27',
+  'IFLC 2027',
+  'Summit / Zirve 2027',
+];
+
+function initPrioItems() {
+  const container = document.getElementById('prio-items');
+  prioItems.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex; align-items:center; gap:10px; margin-bottom:10px; background:white; padding:10px 12px; border-radius:8px; border:1.5px solid var(--border);';
+    div.innerHTML = `
+      <div style="flex:1; font-size:13px">${item}</div>
+      <div class="scale-row" id="prio-scale-${i}" style="gap:4px">
+        ${[1,2,3,4,5].map(n => `<button class="scale-btn" style="width:32px;height:32px;font-size:12px" onclick="selectPrio(${i},${n})">${n}</button>`).join('')}
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function selectPrio(itemIdx, val) {
+  const btns = document.querySelectorAll(`#prio-scale-${itemIdx} .scale-btn`);
+  btns.forEach((b, i) => b.classList.toggle('selected', i < val));
+  scaleValues[`prio_${itemIdx}`] = val;
+}
+
+function selectScale(key, val) {
+  const btns = document.querySelectorAll(`#${key}-scale .scale-btn`);
+  btns.forEach((b, i) => b.classList.toggle('selected', i < val));
+  scaleValues[key] = val;
+  document.getElementById(`${key}-val`).value = val;
+}
+
+function countChars(el, countId) {
+  document.getElementById(countId).textContent = el.value.length + ' Zeichen';
+}
+
+function buildStepIndicators() {
+  const container = document.getElementById('step-indicators');
+  container.innerHTML = '';
+  const labels = ['👤','🔍','📊','🎯','👥','✍️'];
+  for (let i = 0; i < TOTAL_PAGES; i++) {
+    const d = document.createElement('div');
+    d.className = 'step-dot' + (i === currentPage ? ' active' : '') + (i < currentPage ? ' done' : '');
+    d.textContent = i < currentPage ? '✓' : labels[i];
+    d.onclick = () => { if (i < currentPage) goTo(i); };
+    container.appendChild(d);
+  }
+  document.getElementById('progress-label').textContent = `${currentPage + 1} / ${TOTAL_PAGES}`;
+}
+
+function updateProgress() {
+  buildStepIndicators();
+  const pct = (currentPage / (TOTAL_PAGES - 1)) * 100;
+  // no track here, using dots
+  document.getElementById('btn-back').style.display = currentPage > 0 ? '' : 'none';
+  const nextBtn = document.getElementById('btn-next');
+  if (currentPage === TOTAL_PAGES - 1) {
+    nextBtn.textContent = '✅ Absenden / Gönder';
+    nextBtn.classList.replace('btn-primary', 'btn-success');
+  } else {
+    nextBtn.textContent = 'Weiter / İleri →';
+    nextBtn.classList.replace('btn-success', 'btn-primary');
+  }
+  document.getElementById('nav-hint').textContent = `${currentPage + 1} von ${TOTAL_PAGES}`;
+}
+
+function validate(page) {
+  if (page === 0) {
+    if (!document.getElementById('p-name').value.trim()) {
+      alert('Bitte Namen eingeben. / Lütfen adını gir.'); return false;
+    }
+    if (!document.getElementById('p-bl').value) {
+      alert('Bitte Bundesland wählen. / Lütfen eyalet seç.'); return false;
+    }
+    const rollen = document.querySelectorAll('input[name="rolle"]:checked');
+    if (rollen.length === 0) {
+      alert('Bitte mindestens eine Rolle wählen. / Lütfen en az bir rol seç.'); return false;
+    }
+  }
+  if (page === 1) {
+    if (!document.getElementById('rb1').value.trim() || !document.getElementById('rb2').value.trim()) {
+      alert('Bitte Fragen 1 und 2 beantworten.'); return false;
+    }
+  }
+  if (page === 3) {
+    if (!document.getElementById('az1').value.trim()) {
+      alert('Bitte Frage 7 (3 Ziele) beantworten.'); return false;
+    }
+  }
+  return true;
+}
+
+function navigate(dir) {
+  if (dir === 1) {
+    if (!validate(currentPage)) return;
+    if (currentPage === TOTAL_PAGES - 1) {
+      submitForm(); return;
+    }
+    currentPage++;
+  } else {
+    currentPage = Math.max(0, currentPage - 1);
+  }
+  saveDraft();
+  showPage(currentPage);
+}
+
+function goTo(page) {
+  currentPage = page;
+  showPage(currentPage);
+}
+
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  if (page >= TOTAL_PAGES) {
+    document.querySelector('[data-page="done"]').classList.add('active');
+    document.getElementById('nav-btns').style.display = 'none';
+    buildSummary();
+    return;
+  }
+  document.querySelector(`[data-page="${page}"]`).classList.add('active');
+  updateProgress();
+  window.scrollTo(0, 0);
+}
+
+function collectData() {
+  const rollen = [...document.querySelectorAll('input[name="rolle"]:checked')].map(e => e.value).join(', ');
+  const komm = [...document.querySelectorAll('input[name="komm"]:checked')].map(e => e.value).join('; ');
+  const res = [...document.querySelectorAll('input[name="ressource"]:checked')].map(e => e.value).join('; ');
+  const mat = [...document.querySelectorAll('input[name="mat"]:checked')].map(e => e.value).join('; ');
+  const jahre = document.querySelector('input[name="jahre"]:checked')?.value || '';
+  const anonym = document.querySelector('input[name="anonym"]:checked')?.value || '';
+
+  const prioScores = prioItems.map((item, i) => `${item}: ${scaleValues[`prio_${i}`] || '-'}`).join('\n');
+
+  return {
+    name: document.getElementById('p-name').value,
+    email: document.getElementById('p-email').value,
+    bundesland: document.getElementById('p-bl').value,
+    rollen,
+    jahre,
+    rb1: document.getElementById('rb1').value,
+    rb2: document.getElementById('rb2').value,
+    komm_probleme: komm,
+    fehlende_ressourcen: res,
+    zielgruppen: document.getElementById('rb5').value,
+    stopp: document.getElementById('rb6').value,
+    swot_staerken: document.getElementById('sw-s').value,
+    swot_schwaechen: document.getElementById('sw-w').value,
+    swot_chancen: document.getElementById('sw-o').value,
+    swot_risiken: document.getElementById('sw-t').value,
+    ziele_top3: document.getElementById('az1').value,
+    bundesweit_lokal: document.getElementById('az2').value,
+    materialien: mat,
+    prioritaeten: prioScores,
+    gruppenrollen: document.getElementById('gr1').value,
+    dialoghub_ai: document.getElementById('gr2').value,
+    bereitschaft_aufgaben: document.getElementById('gr3').value,
+    zufriedenheit: scaleValues['satis'] || '',
+    engagement_bereitschaft: scaleValues['engage'] || '',
+    anmerkungen: document.getElementById('fr1').value,
+    hauptwunsch: document.getElementById('fr2').value,
+    to_do_thema: document.getElementById('fr3').value,
+    namenssichtbar: anonym,
+    timestamp: new Date().toLocaleString('de-DE'),
+  };
+}
+
+function submitForm() {
+  const data = collectData();
+  localStorage.setItem('bddi_formular_' + Date.now(), JSON.stringify(data));
+  clearDraft();
+  // Firebase speichern
+  if (window._fbFormular) {
+    window._fbFormular.submit(data)
+      .then(() => console.log('✅ Firebase gespeichert'))
+      .catch(e => console.error('Firebase Fehler:', e));
+  }
+  currentPage = TOTAL_PAGES;
+  showPage(currentPage);
+}
+
+function buildSummary() {
+  const data = collectData();
+  const box = document.getElementById('summary-box');
+  box.innerHTML = `<strong>Zusammenfassung / Özet:</strong><br><br>
+    👤 <b>${data.name}</b> · ${data.bundesland} · ${data.rollen}<br>
+    ⭐ Zufriedenheit: ${data.zufriedenheit}/5 · Engagement: ${data.engagement_bereitschaft}/5<br><br>
+    <b>Top 3 Ziele:</b> ${data.ziele_top3.replace(/\n/g,'<br>')}<br><br>
+    <b>SWOT Stärken:</b> ${data.swot_staerken.replace(/\n/g,'<br>')}<br>
+    <b>SWOT Schwächen:</b> ${data.swot_schwaechen.replace(/\n/g,'<br>')}<br>
+    <b>SWOT Chancen:</b> ${data.swot_chancen.replace(/\n/g,'<br>')}<br>
+    <b>SWOT Risiken:</b> ${data.swot_risiken.replace(/\n/g,'<br>')}`;
+}
+
+function exportCSV() {
+  const data = collectData();
+  const rows = [['Feld','Antwort']];
+  for (const [k,v] of Object.entries(data)) {
+    rows.push([k, '"' + String(v).replace(/"/g,'""').replace(/\n/g,' | ') + '"']);
+  }
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'BDDI_Antwort_' + (data.name || 'anonym').replace(/ /g,'_') + '_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+function printAnswers() {
+  window.print();
+}
+
+function restartForm() {
+  currentPage = 0;
+  document.getElementById('nav-btns').style.display = '';
+  // Clear form
+  document.querySelectorAll('input[type=text], input[type=email], textarea').forEach(e => e.value='');
+  document.querySelectorAll('input[type=checkbox], input[type=radio]').forEach(e => e.checked=false);
+  document.querySelectorAll('select').forEach(e => e.selectedIndex=0);
+  document.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
+  Object.keys(scaleValues).forEach(k => delete scaleValues[k]);
+  showPage(0);
+}
+
+// Init
+initPrioItems();
+buildStepIndicators();
+updateProgress();
+checkAndOfferResume();
+</script>
+</body>
+</html>
