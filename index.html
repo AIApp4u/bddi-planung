@@ -734,7 +734,7 @@
 <header>
   <div>
     <h1>🕊️ BDDI Jahresplanung 2026/27 · Yıllık Planlama</h1>
-    <p>Bundesverband Dialogarbeit Deutschland · Tagung · Haziran / Juni 2026 · v10</p>
+    <p>Bundesverband Dialogarbeit Deutschland · Tagung · Haziran / Juni 2026 · v11</p>
   </div>
   <div class="badge">📅 Schuljahr 2026/2027</div>
 </header>
@@ -1245,19 +1245,34 @@ function showToast(msg) {
       const d = child.val();
       const card = document.createElement('div');
       card.style.cssText = 'background:white;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:4px solid var(--accent)';
+      const row = (label, val) => val ? `<div><strong>${label}</strong><br><span style="white-space:pre-wrap">${val}</span></div>` : '';
       card.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <strong style="font-size:15px">👤 ${d.name||'–'} <span style="font-weight:400;color:var(--muted);font-size:13px">· ${d.bundesland||''} · ${d.rollen||''}</span></strong>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:6px">
+          <strong style="font-size:15px">👤 ${d.name||'–'} <span style="font-weight:400;color:var(--muted);font-size:13px">· ${d.bundesland||''} · ${d.jahre||''} · ${d.rollen||''}</span></strong>
           <span style="font-size:11px;color:var(--muted)">${d.timestamp||''}</span>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px">
-          <div><strong>💪 Stärken:</strong><br>${d.swot_staerken||'–'}</div>
-          <div><strong>⚠️ Schwächen:</strong><br>${d.swot_schwaechen||'–'}</div>
-          <div><strong>🌱 Chancen:</strong><br>${d.swot_chancen||'–'}</div>
-          <div><strong>🔴 Risiken:</strong><br>${d.swot_risiken||'–'}</div>
-          <div style="grid-column:1/-1"><strong>🎯 Top 3 Ziele:</strong><br>${(d.ziele_top3||'–').replace(/\n/g,'<br>')}</div>
-          <div><strong>✅ Was lief gut:</strong><br>${d.rb1||'–'}</div>
-          <div><strong>❌ Was lief schlecht:</strong><br>${d.rb2||'–'}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:13px">
+          ${row('✅ Was lief gut:', d.rb1)}
+          ${row('❌ Was lief schlecht:', d.rb2)}
+          ${row('🗣️ Kommunikationsprobleme:', d.komm_probleme)}
+          ${row('📦 Fehlende Ressourcen:', d.fehlende_ressourcen)}
+          ${row('🎯 Zielgruppen erreicht/nicht erreicht:', d.zielgruppen)}
+          ${row('🛑 Was stoppen:', d.stopp)}
+          ${row('💪 SWOT Stärken:', d.swot_staerken)}
+          ${row('⚠️ SWOT Schwächen:', d.swot_schwaechen)}
+          ${row('🌱 SWOT Chancen:', d.swot_chancen)}
+          ${row('🔴 SWOT Risiken:', d.swot_risiken)}
+          <div style="grid-column:1/-1">${row('🎯 Top 3 Ziele:', (d.ziele_top3||'').replace(/\n/g,'<br>'))}</div>
+          ${row('🌍 Bundesweit vs. lokal:', d.bundesweit_lokal)}
+          ${row('📋 Materialien:', d.materialien)}
+          ${row('👥 Gruppenrollen:', d.gruppenrollen)}
+          ${row('🤖 DialogHub/AI:', d.dialoghub_ai)}
+          ${row('🙋 Bereitschaft Aufgaben:', d.bereitschaft_aufgaben)}
+          ${row('⭐ Zufriedenheit:', d.zufriedenheit ? d.zufriedenheit+'/5' : '')}
+          ${row('🔥 Engagement-Bereitschaft:', d.engagement_bereitschaft ? d.engagement_bereitschaft+'/5' : '')}
+          ${row('💬 Anmerkungen:', d.anmerkungen)}
+          ${row('💡 Hauptwunsch:', d.hauptwunsch)}
+          ${row('📌 Thema für Tagesordnung:', d.to_do_thema)}
         </div>`;
       liste.appendChild(card);
     });
