@@ -199,10 +199,14 @@
   };
 
   async function importTeilnehmerAntworten() {
-    if (!confirm('Alle Teilnehmer-Antworten (16 Personen) in Rückblick und SWOT importieren?\n\nBestehende Einträge bleiben erhalten – neue werden hinzugefügt.')) return;
+    if (!confirm('Alle Rückblick & SWOT-Einträge neu setzen?\n\nALLE bestehenden Einträge werden gelöscht und durch die echten Teilnehmer-Antworten ersetzt.')) return;
+    showToast('⏳ Importiere...');
     let total = 0;
     for (const [listId, items] of Object.entries(TEILNEHMER_IMPORT)) {
       const r = listRef(listId);
+      // Delete existing entries first
+      await set(r, null);
+      // Then write all participant answers
       for (const item of items) {
         await push(r, { ...item, ts: Date.now() });
         total++;
@@ -213,7 +217,8 @@
   window.importTeilnehmerAntworten = importTeilnehmerAntworten;
 
   async function seedIfEmpty() {
-    for (const [listId, items] of Object.entries(DEFAULTS.items)) {
+    // Use real participant answers as seed data (replaces old placeholders)
+    for (const [listId, items] of Object.entries(TEILNEHMER_IMPORT)) {
       const r = ref(db, `lists/${listId}`);
       onValue(r, snap => {
         if (!snap.exists()) {
