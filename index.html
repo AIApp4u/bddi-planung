@@ -257,21 +257,83 @@
     }, { onlyOnce: true });
   }
 
+  // Cache for filter/sort
+  let _zieleSnap = null;
+
   function renderZiele(snap) {
+    _zieleSnap = snap;
+    applyZieleFilter();
+  }
+
+  function applyZieleFilter() {
     const tbody = document.getElementById('ziele-tbody');
-    if (!tbody) return;
+    if (!tbody || !_zieleSnap) return;
     const isAdmin = document.body.classList.contains('is-admin');
+
+    const search   = (document.getElementById('ziele-search')?.value || '').toLowerCase();
+    const filterV  = (document.getElementById('ziele-filter-verant')?.value || '');
+    const sortBy   = (document.getElementById('ziele-sort')?.value || 'default');
+
+    // Collect all entries
+    let rows = [];
+    _zieleSnap.forEach(child => {
+      rows.push({ key: child.key, d: child.val() });
+    });
+
+    // Filter
+    if (search) {
+      rows = rows.filter(({ d }) =>
+        (d.ziel||'').toLowerCase().includes(search) ||
+        (d.warum||'').toLowerCase().includes(search) ||
+        (d.verantwortlich||'').toLowerCase().includes(search) ||
+        (d.massnahme||'').toLowerCase().includes(search)
+      );
+    }
+    if (filterV) {
+      rows = rows.filter(({ d }) => (d.verantwortlich||'').includes(filterV));
+    }
+
+    // Sort
+    if (sortBy === 'ziel-az') {
+      rows.sort((a, b) => (a.d.ziel||'').localeCompare(b.d.ziel||'', 'de'));
+    } else if (sortBy === 'ziel-za') {
+      rows.sort((a, b) => (b.d.ziel||'').localeCompare(a.d.ziel||'', 'de'));
+    } else if (sortBy === 'deadline') {
+      const monthOrder = { 'Jan':1,'Feb':2,'Mär':3,'Apr':4,'Mai':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Okt':10,'Nov':11,'Dez':12 };
+      rows.sort((a, b) => {
+        const toNum = dl => {
+          if (!dl) return 9999;
+          const m = Object.keys(monthOrder).find(k => dl.includes(k));
+          const y = (dl.match(/\d{4}/) || ['9999'])[0];
+          return parseInt(y)*100 + (monthOrder[m]||99);
+        };
+        return toNum(a.d.deadline) - toNum(b.d.deadline);
+      });
+    } else if (sortBy === 'verant') {
+      rows.sort((a, b) => (a.d.verantwortlich||'').localeCompare(b.d.verantwortlich||'', 'de'));
+    }
+
+    // Rebuild filter dropdown options from current full snap (not filtered)
+    const verantSelect = document.getElementById('ziele-filter-verant');
+    if (verantSelect && verantSelect.options.length <= 1) {
+      const verantSet = new Set();
+      _zieleSnap.forEach(child => {
+        const v = child.val().verantwortlich;
+        if (v) v.split(',').forEach(p => verantSet.add(p.trim()));
+      });
+      verantSet.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v; opt.textContent = v;
+        verantSelect.appendChild(opt);
+      });
+    }
+
     tbody.innerHTML = '';
-    if (!snap.exists()) return;
-    let n = 0;
-    snap.forEach(child => {
-      n++;
-      const key = child.key;
-      const d = child.val();
+    rows.forEach(({ key, d }, i) => {
       const tr = document.createElement('tr');
       tr.dataset.fbkey = key;
       tr.innerHTML = `
-        <td><strong>Z${n}</strong></td>
+        <td><strong>Z${i+1}</strong></td>
         <td><strong>${d.ziel||''}</strong></td>
         <td>${d.warum||''}</td>
         <td><span class="tag tag-blue">${d.verantwortlich||''}</span></td>
@@ -285,6 +347,10 @@
         </td>`;
       tbody.appendChild(tr);
     });
+
+    // Show count
+    const countEl = document.getElementById('ziele-count');
+    if (countEl) countEl.textContent = rows.length + ' Ziel(e)';
   }
 
   function subscribeZiele() {
@@ -298,6 +364,7 @@
     seed: seedZieleIfEmpty,
     subscribe: subscribeZiele
   };
+  window.applyZieleFilter = applyZieleFilter;
 
   // ── Projekte Firebase ──
   const PROJEKTE_DEFAULTS = [
@@ -850,6 +917,26 @@
   <div class="toolbar">
     <div><h2>Jahresziele 2026/27</h2><p class="subtitle">Max. 5–7 verbindliche Ziele</p></div>
     <button class="btn btn-primary" id="btn-add-ziel" style="display:none" onclick="openModal('ziel')">+ Neues Ziel</button>
+  </div>
+  <!-- Filter / Sort Bar -->
+  <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;">
+    <input id="ziele-search" type="text" placeholder="🔍 Suchen..." oninput="applyZieleFilter()"
+      style="flex:1;min-width:160px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px;">
+    <select id="ziele-filter-verant" onchange="applyZieleFilter()"
+      style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px;">
+      <option value="">👥 Alle Verantwortlichen</option>
+    </select>
+    <select id="ziele-sort" onchange="applyZieleFilter()"
+      style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px;">
+      <option value="default">↕️ Reihenfolge</option>
+      <option value="ziel-az">🔤 Ziel A→Z</option>
+      <option value="ziel-za">🔤 Ziel Z→A</option>
+      <option value="deadline">📅 Deadline</option>
+      <option value="verant">👤 Verantwortlich</option>
+    </select>
+    <span id="ziele-count" style="color:var(--text-muted);font-size:13px;white-space:nowrap;"></span>
+    <button onclick="document.getElementById('ziele-search').value='';document.getElementById('ziele-filter-verant').value='';document.getElementById('ziele-sort').value='default';applyZieleFilter();"
+      style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text-muted);font-size:13px;cursor:pointer;">✕ Reset</button>
   </div>
   <div class="table-wrap"><table><thead><tr><th>#</th><th>Ziel / Hedef</th><th>Warum?</th><th>Verantwortlich</th><th>Maßnahme</th><th>Deadline</th><th>KPI</th><th>Status</th><th id="th-ziel-act" style="display:none">⚙️</th></tr></thead>
   <tbody id="ziele-tbody"></tbody></table></div>
