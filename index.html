@@ -79,6 +79,139 @@
   // ── Helpers ──
   function listRef(listId) { return ref(db, `lists/${listId}`); }
 
+  // ── Import Teilnehmer-Antworten in Rückblick + SWOT ──
+  const TEILNEHMER_IMPORT = {
+    'rb-gut': [
+      { text: "Ramadan-Veranstaltungen laufen bundesweit als Selbstverständlichkeit (Simit & Breze, Iftar-Programme, Koop. mit Fokular)", author: "Hülya Ünal / Ramazan Özgü / Zaynab Akbari" },
+      { text: "Muslimische Kulturwoche Berlin, Sommerschule Albanien, DDP Dialog konkret, Interkulturelle Werkstatt (kath.-evang.-musl.)", author: "Kübra Dalkiliç" },
+      { text: "Nostra Aetate, IFLC, Ramadan-Programme, Dialog Dinner, Dialogpreis – Termine wurden eingehalten", author: "Aysenur Koc" },
+      { text: "25-Jahre-Feier Bayern erfolgreich geplant – neue Dynamik entstanden", author: "Talha Koç" },
+      { text: "Hamburger Jugend-Dialog: Anschluss an Istisareler, Bremen-Diyalog-Team gegründet, Turniere organisiert", author: "Mustafa Erdogan" },
+      { text: "Projektbezogenes Arbeiten, Fokus auf gesellschaftspolitische Themen, interkulturelle Projekte neben interreligiösen", author: "Yasemin Kurt" },
+      { text: "Netzwerken, Kontakte verknüpfen, Begegnungsveranstaltungen, Kultur- und Kunstveranstaltungen (NRW)", author: "Gül Hamarat" },
+      { text: "Neue abi/abla-Zugänge in Kommunen, Anstieg der Dialogformate in Sachsen", author: "Tayyar K (Neuköln)" },
+      { text: "Engagierte wachsen stetig; Ehrenamt gewinnt in Krisenzeiten an Bedeutung", author: "Ramazan Özgü" },
+      { text: "Stadträte, OB, Bistum, Prof. Naurath erreicht; Kooperation mit Georgios Vlantis (neu)", author: "Hülya Ünal" },
+      { text: "Ramadan Iftar, Internationales Frühstück, Gemeinsam Kochen, Malteser-Kooperation, Leseklub", author: "Özkan Tokuc" },
+      { text: "Iftar-Veranstaltungen, Uni-Dialog mit kreativen Treffen (Porzellanbemalen)", author: "Zehra Zülal Akpinar" },
+      { text: "Dialog-Picknick erstmalig, Hessen-Meclis-Ziyareti", author: "Asım Şimşek" },
+      { text: "Ramadan erfolgreich, Summit in Madrid, Hizmet Konferenz + Interrel. Reise Indien, HoO macht Schule", author: "Kübra Dalkiliç" },
+      { text: "Klise (Kirche) Kooperation gut, Ramazan Iftar-Programm – Rheinland-Pfalz", author: "Yavuz" },
+      { text: "Studierenden in Nürnberg erreicht; Ramadan-Yemekleri gut besucht", author: "Ber Nürnberg" }
+    ],
+    'rb-schlecht': [
+      { text: "Kein lokaler Sorumlu in Hamburg/Kiel – Hizmetlücke; Bremer Uni-Initiative gescheitert", author: "Mustafa Erdogan" },
+      { text: "Social Media fehlt komplett: kein Instagram, keine Verantwortliche, keine Vorlagen", author: "Asena Karatekin / Zaynab Akbari / Ber Nürnberg" },
+      { text: "Kommunikation zwischen Gruppen mangelhaft: Jugend ↔ Erwachsene, BDDI ↔ BL, BL ↔ Stadt, Medien AG ↔ Rest", author: "Talha Koç / Gül Hamarat / Zehra Zülal Akpinar" },
+      { text: "Zusammenarbeit zwischen Hizmet-Einrichtungen (Rehberlik, Genclik, Müslüman Topluluklar, Balkan) unkoordiniert", author: "Ramazan Özgü" },
+      { text: "Meetings zu lang, zu viele Ausreißer, Mitarbeitermangel – 'In Bayern gar nichts mehr'", author: "Talha Koç" },
+      { text: "Reiseprojekte und Akademia-Zusammenarbeit liefen schlecht", author: "Yasemin Kurt" },
+      { text: "Intern PR, Jugenddialog, VIP Kontaktpflege, Reisen (NRW)", author: "Gül Hamarat" },
+      { text: "Arbeitslast auf wenige Köpfe verteilt; Informationsfluss in Gesprächskreisen suboptimal", author: "Tayyar K (Neuköln)" },
+      { text: "Nur unterreligiöse Projekte; interkulturelle/sportliche/musische fehlten; interne Zusammenarbeit beim Iftar nicht gut", author: "Hülya Ünal" },
+      { text: "Ramazan Together (Hessen) schlecht gelaufen", author: "Asım Şimşek" },
+      { text: "Sharing Ramadan: Projekt ok, aber Bölge-Kooperation war nicht gut; Hizmet-EA für HoO schwer zu gewinnen", author: "Kübra Dalkiliç" },
+      { text: "Newsletter fehlt; İl-Temsilciler-Takip nicht umgesetzt; Ramadan Infoveranstaltung zu stressig", author: "Aysenur Koc" },
+      { text: "Materialien fehlen (Bayern)", author: "Recep Efe" },
+      { text: "Bölge-Kontakt sehr schwach; was BDDI macht kommt unten nicht an", author: "Yavuz" },
+      { text: "Spontan entstandene Veranstaltungen ohne ausreichende Werbung", author: "Zehra Zülal Akpinar" },
+      { text: "Nürnberg: Nur Einzelgespräche, keine größeren Projekte", author: "Ber Nürnberg" }
+    ],
+    'rb-gelernt': [
+      { text: "Frühzeitige Planung macht Ramadan-Arbeit effizienter und stressfreier", author: "Aysenur Koc" },
+      { text: "Lokale Verantwortliche sind der Schlüssel – ohne Sorumlu laufen Städte leer", author: "Mustafa Erdogan" },
+      { text: "Projektbezogenes Arbeiten schafft mehr Qualität als Ad-hoc-Treffen", author: "Yasemin Kurt" },
+      { text: "Externe Kooperationen (Fokular, Malteser, Bistum, Kirche) bringen neue Reichweite", author: "Hülya Ünal / Özkan Tokuc" },
+      { text: "Jugend muss aktiv eingebunden werden – Beteiligung auf Augenhöhe, nicht nur als Teilnehmende", author: "Talha Koç / Gül Hamarat" },
+      { text: "Skalierbarkeit von Meetings muss begrenzt werden – Qualität vor Quantität", author: "Talha Koç" },
+      { text: "Halka temas (Breitenwirkung) ist wichtiger als nur VIP/Politik-Kontakte", author: "Recep Efe" },
+      { text: "Dialoghub / Akademie kann als ganzjähriges Weiterbildungsformat genutzt werden", author: "Tayyar K / Kübra Dalkiliç" }
+    ],
+    'rb-stopp': [
+      { text: "Spontane Großveranstaltungen ohne Vorlauf – Dialog Konkret war zu kurzfristig", author: "Kübra Dalkiliç" },
+      { text: "Meetings mit zu vielen Teilnehmenden und ohne klare Agenda weiterführen", author: "Talha Koç" },
+      { text: "BDDI Toplantı-Gruppen: Çoğu konu ve işleniş şekli bize hitap etmiyor", author: "Asım Şimşek" },
+      { text: "KONTAKTPFLEGE darf kein Nebenprojekt bleiben – sie muss in den Fokus rücken", author: "Yasemin Kurt" },
+      { text: "Bölge-Dialog vs. Kurum-Dialog Trennung – verhindert Zusammenarbeit", author: "Ber Nürnberg" },
+      { text: "Eyaletler arbeiten weiterhin isoliert – kein gemeinsames Reporting, kein Austausch", author: "Asım Şimşek" }
+    ],
+    'swot-staerken': [
+      { text: "Ramadan-Arbeit als bundesweites Alleinstellungsmerkmal – funktioniert überall", author: "Ramazan Özgü / Aysenur Koc" },
+      { text: "Professionelle Veranstaltungsorganisation – Videoschnitt, Projektschreiben, Mobilisierung (Berlin)", author: "Kübra Dalkiliç" },
+      { text: "Starke VIP-Kontakte: Lokalpolitiker, Stadträte, OB, Bistum, Universitätsprofessoren", author: "Ramazan Özgü / Hülya Ünal / Özkan Tokuc" },
+      { text: "Hohe Engagement-Bereitschaft der Ehrenamtlichen (Ø 4,4/5)", author: "Alle Teilnehmenden" },
+      { text: "Dialogakademie und DialogHub als Kompetenzzentrum", author: "Asım Şimşek / Ber Nürnberg" },
+      { text: "Gesellschaftspolitische Themen im Fokus (BW)", author: "Yasemin Kurt" },
+      { text: "Gutes Team, regelmäßige Veranstaltungsstruktur (Simit & Breze als ritualisierter Ablauf)", author: "Hülya Ünal" },
+      { text: "Kommunikation nach außen stark; fachliche Expertise vorhanden", author: "Talha Koç" },
+      { text: "Organisation und Kontakte als Kernkompetenz der Geschäftsstelle", author: "Aysenur Koc" },
+      { text: "Iftar-Programm als wiederkehrendes starkes Format", author: "Yavuz" },
+      { text: "Toleranz, güler yüzlülük, muhabbet açmak, Mehrsprachigkeit, Religionswissen", author: "Zehra Zülal Akpinar" },
+      { text: "Planlama (Planungskompetenz) als Stärke – auch bei neuen Mitgliedern", author: "Zaynab Akbari" },
+      { text: "Kontaktaufbau mit NGOs, Verwaltung, Mobilisierungsfähigkeit (Young Professionals)", author: "Özkan Tokuc" },
+      { text: "Gemeindemitglieder haben hohes Bildungsniveau; prinzipielle Dialogbereitschaft vorhanden", author: "Tayyar K (Neuköln)" },
+      { text: "Wachsende Zahl Engagierter – Ehrenamt gewinnt in Krisenzeiten an Bedeutung", author: "Ramazan Özgü" }
+    ],
+    'swot-schwaechen': [
+      { text: "Kein einheitliches Social-Media-Konzept – keine zuständige Person, keine Vorlagen, kein Instagram", author: "Asena Karatekin / Gül Hamarat / Ber Nürnberg" },
+      { text: "Fehlende lokale Sorumlular in vielen Städten und Bundesländern", author: "Mustafa Erdogan / Hülya Ünal" },
+      { text: "Eyaletler-Kommunikation schwach – kein gemeinsames Reporting, keine Partnerschaft", author: "Asım Şimşek / Yavuz" },
+      { text: "Arbeitslast auf wenige Köpfe – Überlastung droht", author: "Talha Koç / Tayyar K" },
+      { text: "Kein Newsletter, kein regelmäßiges Eyalet-Reporting", author: "Aysenur Koc / Asım Şimşek" },
+      { text: "Meetings zu lang, Qualität der Sitzungen niedrig, Motivation sinkt", author: "Talha Koç" },
+      { text: "Konzept für Social-Media-Präsenz fehlt komplett", author: "Yasemin Kurt" },
+      { text: "Keine staatliche Strukturfinanzierung – alles ehrenamtlich getragen", author: "Ramazan Özgü" },
+      { text: "Takibat, Toplantı-Katılım, Tavsiyelere-Uyma mangelhaft (Geschäftsstelle)", author: "Aysenur Koc" },
+      { text: "Iletisimi canlı tutmak – neue Kontakte kaum, nur bestehende Kreise aktiviert", author: "Zehra Zülal Akpinar" },
+      { text: "Keine geförderten Projekte, keine gemeinsamen Projekte bayernweit", author: "Hülya Ünal" },
+      { text: "Bölge-Kontakt schwach; Findung und Weiterbildung von Dialoginteressierten fehlt", author: "Kübra Dalkiliç / Yavuz" },
+      { text: "Koordination intern schwach – Kurum-Bölge-Trennung verhindert Zusammenarbeit", author: "Ber Nürnberg / Ramazan Özgü" },
+      { text: "Networking als Schwäche bei Genç Diyalogcular", author: "Zaynab Akbari" }
+    ],
+    'swot-chancen': [
+      { text: "Jugend als Motor – Genç Diyalogcular wollen Verantwortung und bringen Social-Media-Wissen mit", author: "Asena Karatekin / Zehra Zülal Akpinar" },
+      { text: "Dialoghub / Akademie als Bildungsplattform für ganzjährige Weiterbildung ausbauen", author: "Tayyar K / Kübra Dalkiliç / Ber Nürnberg" },
+      { text: "AI-Tools und DialogHub für Content-Erstellung und PR-Arbeit nutzen", author: "Yasemin Kurt / Aysenur Koc / Özkan Tokuc" },
+      { text: "DDP 2027 als bundesweites Leuchtturmprojekt positionieren", author: "Kübra Dalkiliç / BDDI" },
+      { text: "Neu Eingewanderte mit frischen Perspektiven als Potenzial einbinden", author: "Gül Hamarat / Tayyar K" },
+      { text: "Breitere Zielgruppen: Schulen, Unis, nicht-muslimische Communities, Uni-Initiativen", author: "Zehra Zülal Akpinar / Ber Nürnberg" },
+      { text: "Internationale Vernetzung ausbauen: Nostra Aetate, Summit, IFLC, EU-Partner", author: "Ramazan Özgü / Kübra Dalkiliç" },
+      { text: "Rehberlik-Netzwerk als Kanal für Dialog-Nachwuchs nutzen", author: "Asena Karatekin / Zehra Zülal Akpinar" },
+      { text: "Young Professionals – passive Freunde mit Erfahrung aktivieren", author: "Özkan Tokuc" },
+      { text: "Jugendarbeit: einmalige Veranstaltungen zu regelmäßigen Formaten weiterentwickeln", author: "Yasemin Kurt" },
+      { text: "Diger eyalet programlarından haberdar olmak – besserer bundesweiter Austausch möglich", author: "Aysenur Koc" },
+      { text: "Insan kaynağı (Humankapital) ist vorhanden und noch nicht ausgeschöpft", author: "Asım Şimşek / Yavuz" }
+    ],
+    'swot-risiken': [
+      { text: "Überforderung der Hauptamtlichen durch wachsende Anforderungen und Ehrenamtsausfall", author: "Yasemin Kurt / Talha Koç" },
+      { text: "Finanzierungsrückzug – staatliche Förderungen werden zurückgezogen", author: "Ramazan Özgü" },
+      { text: "Verlust der Jugend: fehlende Sicherheit, Schutz und Motivation", author: "Talha Koç" },
+      { text: "Yükselen ırkçılık – wachsender Rassismus als gesellschaftliches Risiko", author: "Ber Nürnberg" },
+      { text: "Einheimische und zugezogene Perspektiven driften auseinander – Harmonisierung schwierig", author: "Tayyar K (Neuköln)" },
+      { text: "Hizmetin Türkiyedeki geçmişi – negative Wahrnehmung durch Türkei-Erfahrung", author: "Zehra Zülal Akpinar" },
+      { text: "'Wir sind zu professionell' – Ehrenamtliche fühlen sich nicht angesprochen", author: "Kübra Dalkiliç" },
+      { text: "BDDI-Struktur und Bölge-Kooperation ungeklärt – verhindert bundesweite Koordination", author: "Ber Nürnberg / Gül Hamarat" },
+      { text: "Insan potansiyelini kullanamamak – vorhandenes Potenzial bleibt ungenutzt", author: "Asım Şimşek" },
+      { text: "Verlust der Erwachsenen durch Frust und zähe Arbeitsweise", author: "Talha Koç" },
+      { text: "Müslüman ablaların ayrımcılığa maruz kalması – diskriminierende Erfahrungen hemmen Engagement", author: "Zehra Zülal Akpinar" },
+      { text: "Dialogstrukturen können in Krisenzeiten ihre Priorität verlieren", author: "Ramazan Özgü" }
+    ]
+  };
+
+  async function importTeilnehmerAntworten() {
+    if (!confirm('Alle Teilnehmer-Antworten (16 Personen) in Rückblick und SWOT importieren?\n\nBestehende Einträge bleiben erhalten – neue werden hinzugefügt.')) return;
+    let total = 0;
+    for (const [listId, items] of Object.entries(TEILNEHMER_IMPORT)) {
+      const r = listRef(listId);
+      for (const item of items) {
+        await push(r, { ...item, ts: Date.now() });
+        total++;
+      }
+    }
+    showToast(`✅ ${total} Einträge aus 16 Teilnehmer-Antworten importiert!`);
+  }
+  window.importTeilnehmerAntworten = importTeilnehmerAntworten;
+
   async function seedIfEmpty() {
     for (const [listId, items] of Object.entries(DEFAULTS.items)) {
       const r = ref(db, `lists/${listId}`);
@@ -787,6 +920,7 @@
 <div id="admin-bar">
   <div><span class="admin-badge">ADMIN</span><span class="live-dot"></span><span id="online-users"></span></div>
   <div style="display:flex;gap:8px">
+    <button class="bar-btn" id="btn-import-antworten" onclick="importTeilnehmerAntworten()" style="background:rgba(39,174,96,0.4)" title="Alle 16 Teilnehmer-Antworten in Rückblick & SWOT importieren">📥 Antworten importieren</button>
     <button class="bar-btn" onclick="window.print()">🖨️</button>
     <button class="bar-btn" style="background:rgba(231,76,60,0.3)" onclick="doLogout()">Ausloggen</button>
   </div>
@@ -805,7 +939,7 @@
 <header>
   <div>
     <h1>🕊️ BDDI Jahresplanung 2026/27 · Yıllık Planlama</h1>
-    <p>Bundesverband Dialogarbeit Deutschland · Tagung · Haziran / Juni 2026 · v11</p>
+    <p>Bundesverband Dialogarbeit Deutschland · Tagung · Haziran / Juni 2026 · v12</p>
   </div>
   <div class="badge">📅 Schuljahr 2026/2027</div>
 </header>
